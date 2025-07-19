@@ -1,0 +1,5 @@
+setuptools
+python-dotenv
+ipykernel
+langchain
+langchain_groq
