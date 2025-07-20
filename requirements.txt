@@ -2,6 +2,9 @@ setuptools
 python-dotenv
 ipykernel
 langchain
+langchain_community
 langchain_groq
 langchain_google_genai
 langchain_openai
+pypdf
+faiss-cpu
