@@ -15,6 +15,8 @@ class CustomException(Exception):
         customLogger = CustomLogger()
         self.logger = customLogger.get_logger(__file__)
 
+    # The __str__ method returns a formatted string representation of the CustomException instance.
+    # It provides a clear and informative description of the exception, useful for debugging, logging, or displaying error/other details.
     def __str__(self):
         return (
             f"\n--- Custom Exception ---\n"
