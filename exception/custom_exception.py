@@ -11,14 +11,11 @@ class CustomException(Exception):
         self.eror_message = error_message
         self.traceback_str = ''.join(traceback.format_exception(*error_details.exc_info()))
         
-        self.logger = CustomLogger().get_logger(__file__)
+        # Initialize the custom logger
+        customLogger = CustomLogger()
+        self.logger = customLogger.get_logger(__file__)
 
     def __str__(self):
-        self.logger.error(
-            f"File: {self.file_name}, Line: {self.line_number}, "
-            f"Message: {self.eror_message}, Traceback: {self.traceback_str}"
-        )
-        
         return (
             f"\n--- Custom Exception ---\n"
             f"File      : {self.file_name}\n"
@@ -34,9 +31,5 @@ if __name__ == "__main__":
         1 / 0
     except Exception as e:
         custom_exception = CustomException(str(e), sys)
-        
-        customLogger = CustomLogger()
-        logger = customLogger.get_logger(__file__)
-        logger.error(custom_exception)
-        
+        custom_exception.logger.error(custom_exception)
         raise custom_exception
