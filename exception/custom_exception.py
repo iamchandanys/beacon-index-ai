@@ -5,9 +5,7 @@ from logger.custom_logger import CustomLogger
 
 class CustomException(Exception):
     def __init__(self, error_message: str, error_details: sys):
-        # Extract exc_traceback from exc_info() tuple.
-        # This provides the file name and line number where the exception occurred.
-        _,_,exc_traceback = error_details.exc_info()
+        _,_,exc_traceback = error_details.exc_info() # Extract exc_traceback from exc_info() tuple.
         self.file_name = exc_traceback.tb_frame.f_code.co_filename
         self.line_number = exc_traceback.tb_lineno
         self.error_message = error_message
