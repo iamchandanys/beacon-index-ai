@@ -1,7 +1,7 @@
 import sys
 import traceback
 
-from logger.custom_logger import CustomLogger
+from logger.custom_struct_logger import CustomStructLogger
 
 class CustomException(Exception):
     def __init__(self, error_message: str, error_details: sys):
@@ -12,8 +12,8 @@ class CustomException(Exception):
         self.traceback_str = ''.join(traceback.format_exception(*error_details.exc_info()))
         
         # Initialize the custom logger
-        customLogger = CustomLogger()
-        self.logger = customLogger.get_logger(__file__)
+        customStructLogger = CustomStructLogger()
+        self.logger = customStructLogger.get_logger(__file__)
 
     # The __str__ method returns a formatted string representation of the CustomException instance.
     # It provides a clear and informative description of the exception, useful for debugging, logging, or displaying error/other details.

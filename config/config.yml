@@ -1,0 +1,3 @@
+'''
+faiss_db:
+  collection_name: "doucment_portal"
