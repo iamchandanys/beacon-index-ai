@@ -5,7 +5,7 @@ import structlog
 
 class CustomStructLogger:
     def __init__(self, log_dir="logs"):
-        # Initialize the logs directory. Every logs will stay in the same logs directory as this script.
+        # Ensure all log files are stored in a dedicated 'logs' directory located alongside this script.
         self.logs_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), log_dir)
         
         # Create the logs directory if it doesn't exist
@@ -20,14 +20,12 @@ class CustomStructLogger:
     def get_logger(self, name=__file__) -> any:
         logger_name = os.path.basename(name)
 
-        # Configure file logging
-        # This will log raw JSON lines to the file
+        # Configure file logging. This will log raw JSON lines to the file
         file_handler = logging.FileHandler(self.log_file_path)
         file_handler.setLevel(logging.DEBUG)
         file_handler.setFormatter(logging.Formatter("%(message)s"))  # Raw JSON lines
 
-        # Configure console logging
-        # This will log raw JSON lines to the console
+        # Configure console logging. This will log raw JSON lines to the console
         console_handler = logging.StreamHandler()
         console_handler.setLevel(logging.INFO)
         console_handler.setFormatter(logging.Formatter("%(message)s"))
