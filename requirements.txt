@@ -1,3 +1,5 @@
+pydantic # For settings management
+pydantic_settings # For settings management
 setuptools
 python-dotenv
 ipykernel
@@ -10,3 +12,7 @@ pypdf
 faiss-cpu
 structlog
 PyMuPDF
+FastAPI # For building APIs
+uvicorn # For running the FastAPI server
+python-multipart # For handling file uploads
+azure-storage-blob # For Azure Blob Storage operations

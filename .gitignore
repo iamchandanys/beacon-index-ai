@@ -209,3 +209,5 @@ __marimo__/
 logger/logs/
 exception/logs/
 Notebook/logs/
+
+.vscode/
