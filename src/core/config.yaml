@@ -1,0 +1,8 @@
+chat_llm:
+  az_open_ai:
+    azure_deployment: gpt-4o-mini
+    api_version: 2025-01-01-preview
+    temperature: 0.2
+    max_tokens: 2048
+    max_retries: 2
+    top_p: 0.95

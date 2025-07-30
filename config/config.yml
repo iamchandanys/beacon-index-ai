@@ -1,9 +1,0 @@
-llm:
-  az_open_ai:
-    temperature: 0.7
-    max_tokens: 2048
-    top_p: 1.0
-  groq:
-    temperature: 0.7
-    max_tokens: 2048
-    top_p: 1.0

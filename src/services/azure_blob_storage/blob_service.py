@@ -1,5 +1,5 @@
 from azure.storage.blob import BlobServiceClient, ContentSettings
-from src.core.config import get_settings
+from src.core.app_settings import get_settings
 from typing import BinaryIO
 
 class BlobService:
@@ -41,7 +41,7 @@ class BlobService:
             
             # Construct URL
             account_url = self.client.primary_endpoint
-            return f"{account_url}/{container_name}/{blob_name}"
+            return f"{account_url}{container_name}/{blob_name}"
         
         except Exception as e:
             

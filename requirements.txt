@@ -11,7 +11,7 @@ langchain_openai
 pypdf
 faiss-cpu
 structlog
-PyMuPDF
+PyMuPDF # For PDF processing
 FastAPI # For building APIs
 uvicorn # For running the FastAPI server
 python-multipart # For handling file uploads

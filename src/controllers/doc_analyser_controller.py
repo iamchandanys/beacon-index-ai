@@ -18,7 +18,7 @@ class DocAnalyserController:
         customStructLogger = CustomStructLogger()
         self.logger = customStructLogger.get_logger(__file__)
 
-    async def upload_document(self, data: UploadFile = File(...)):
+    async def analyse_document(self, data: UploadFile = File(...)):
         """
         Endpoint to upload a document to the document portal to analyze it.
         """
@@ -26,14 +26,11 @@ class DocAnalyserController:
             
             self.logger.info(f"Uploading document to the document portal. File name: {data.filename}, Content type: {data.content_type}")
             
-            response = await self.repository.upload_document(data)
+            response = await self.repository.analyse_document(data)
             
             self.logger.info("Document uploaded successfully")
 
-            return {
-                "message": "Document uploaded successfully.",
-                "url": response
-            }
+            return response
             
         except ValueError as ve:
             
@@ -42,16 +39,6 @@ class DocAnalyserController:
         except Exception as e:
 
             raise HTTPException(status_code=500, detail=f"Unexpected error during document upload: {str(e)}")
-    
-    async def analyze_document(self):
-        """
-        Endpoint to analyze a document.
-        This is a placeholder for the actual implementation.
-        """
-        
-        return {
-            "message": "Document analysis is not yet implemented."
-        }
 
 # Initialize the controller      
 doc_analyser_controller = DocAnalyserController()
@@ -60,14 +47,9 @@ doc_analyser_controller = DocAnalyserController()
 # Each endpoint is defined with its path, method, and handler.
 endpoints = [
     {
-        "path": "/upload",
-        "method": "post",
-        "handler": doc_analyser_controller.upload_document
-    },
-    {
         "path": "/analyze",
         "method": "post",
-        "handler": doc_analyser_controller.analyze_document
+        "handler": doc_analyser_controller.analyse_document
     }
 ]
 
