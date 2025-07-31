@@ -1,5 +1,16 @@
 # llmops-workshop-document-portal
 
+## Environment Setup
+
+Create a `.env` file in the project root with the following fields:
+
+```
+AZURE_STORAGE_CONN_STR=your-azure-storage-connection-string
+AZURE_OPENAI_API_KEY=your-azure-openai-api-key
+AZURE_OPENAI_ENDPOINT=your-azure-openai-endpoint
+AZURE_MONITOR_CONN_STR=your-azure-monitor-connection-string
+```
+
 ## Running the FastAPI Application
 
 To start the FastAPI server locally:
