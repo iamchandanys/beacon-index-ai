@@ -24,15 +24,11 @@ class DocAnalyserController:
         """
         try:
             
-            
-            
             self.log.info(
                 "controller.analyse_document.start",
                 filename=data.filename,
                 content_type=data.content_type,
             )
-            
-            1/0
             
             response = await self.repository.analyse_document(data)
             
