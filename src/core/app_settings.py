@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     AZURE_STORAGE_CONN_STR: str
     AZURE_OPENAI_API_KEY: str
     AZURE_OPENAI_ENDPOINT: str
+    AZURE_MONITOR_CONN_STR: str
 
     class Config:
         env_file = ".env"

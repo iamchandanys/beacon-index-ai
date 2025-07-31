@@ -1,10 +1,11 @@
 import sys
+import structlog
 
 from fastapi import APIRouter, status
 from src.repositories.doc_analyser_repository import DocAnalyserRepository
+from src.utils.custom_exception import CustomException
 from fastapi import UploadFile, File
 from fastapi import HTTPException
-from logger.custom_struct_logger import CustomStructLogger
 
 router = APIRouter()
 
@@ -14,9 +15,8 @@ class DocAnalyserController:
         Initializes the DocAnalyserController.
         This controller handles document analysis related endpoints.
         """
+        self.log = structlog.get_logger(self.__class__.__name__)
         self.repository = DocAnalyserRepository()
-        customStructLogger = CustomStructLogger()
-        self.logger = customStructLogger.get_logger(__file__)
 
     async def analyse_document(self, data: UploadFile = File(...)):
         """
@@ -24,21 +24,31 @@ class DocAnalyserController:
         """
         try:
             
-            self.logger.info(f"Uploading document to the document portal. File name: {data.filename}, Content type: {data.content_type}")
+            
+            
+            self.log.info(
+                "controller.analyse_document.start",
+                filename=data.filename,
+                content_type=data.content_type,
+            )
+            
+            1/0
             
             response = await self.repository.analyse_document(data)
             
-            self.logger.info("Document uploaded successfully")
-
             return response
             
         except ValueError as ve:
             
-            raise HTTPException(status_code=400, detail=f"{str(ve)}")
+            error_msg = CustomException(str(ve), sys)
+            self.log.error("controller.analyse_document.error", error_msg=error_msg)
+            raise HTTPException(status_code=400, detail=f"{error_msg}")
         
         except Exception as e:
-
-            raise HTTPException(status_code=500, detail=f"Unexpected error during document upload: {str(e)}")
+            
+            error_msg = CustomException(str(e), sys)
+            self.log.error("controller.analyse_document.unexpected_error", error_msg=error_msg)
+            raise HTTPException(status_code=500, detail=f"Unexpected error during document upload.")
 
 # Initialize the controller      
 doc_analyser_controller = DocAnalyserController()
