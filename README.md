@@ -13,9 +13,9 @@ AZURE_MONITOR_CONN_STR=your-azure-monitor-connection-string
 
 ## Key Utility Modules
 
-- [src/utils/az_logger.py](src/utils/az_logger.py): [`az_logger`](src/utils/az_logger.py) – Azure Monitor and console logging setup.
-- [src/utils/custom_exception.py](src/utils/custom_exception.py): [`custom_exception`](src/utils/custom_exception.py) – Custom exception class for detailed error reporting.
-- [src/services/azure_blob_storage/blob_service.py](src/services/azure_blob_storage/blob_service.py): [`azure_blob_storage.blob_service`](src/services/azure_blob_storage/blob_service.py) – Azure Blob Storage upload service.
+- [`az_logger`](src/utils/az_logger.py) – Azure Monitor and console logging setup.
+- [`custom_exception`](src/utils/custom_exception.py) – Custom exception class for detailed error reporting.
+- [`azure_blob_storage.blob_service`](src/services/azure_blob_storage/blob_service.py) – Azure Blob Storage upload service.
 
 ## Running the FastAPI Application
 
