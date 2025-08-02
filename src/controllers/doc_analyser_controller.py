@@ -23,27 +23,22 @@ class DocAnalyserController:
         Endpoint to upload a document to the document portal to analyze it.
         """
         try:
-            
-            self.log.info(
-                "controller.analyse_document.start",
-                filename=data.filename,
-                content_type=data.content_type,
-            )
+            self.log.info("Document analysis started")
             
             response = await self.repository.analyse_document(data)
+            
+            self.log.info("Document analysis completed successfully", response=response)
             
             return response
             
         except ValueError as ve:
-            
-            error_msg = CustomException(str(ve), sys)
-            self.log.error("controller.analyse_document.error", error_msg=error_msg)
+            error_msg = CustomException(str(ve), sys).__str__()
+            self.log.error("Document analysis failed", error_msg=error_msg)
             raise HTTPException(status_code=400, detail=f"{error_msg}")
         
         except Exception as e:
-            
-            error_msg = CustomException(str(e), sys)
-            self.log.error("controller.analyse_document.unexpected_error", error_msg=error_msg)
+            error_msg = CustomException(str(e), sys).__str__()
+            self.log.error("Document analysis failed", error_msg=error_msg)
             raise HTTPException(status_code=500, detail=f"Unexpected error during document upload.")
 
 # Initialize the controller      
