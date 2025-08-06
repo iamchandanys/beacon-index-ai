@@ -3,6 +3,7 @@ import uuid
 
 from fastapi import FastAPI, Request
 from src.controllers.doc_analyser_controller import router as doc_analyser_router
+from src.controllers.doc_chat_controller import router as doc_chat_router
 from src.utils.az_logger import az_logging
 from contextlib import asynccontextmanager
 
@@ -42,12 +43,16 @@ async def add_request_context(request: Request, call_next):
     finally:
         structlog.contextvars.clear_contextvars()  # Clean up context after request
 
-# This attaches the document analysis routes to the app under the /doc-analyser path.
-app.include_router(
-    doc_analyser_router,
-    prefix="/doc-analyser",
-    tags=["Document Analysis"],
-)
+# Include the routers with appropriate prefixes and tags.
+routers = [
+    (doc_analyser_router, "/doc-analyser", ["Document Analysis"]),
+    (doc_chat_router, "/doc-chat", ["Document Chat"]),
+]
+
+# Loop through each router and register it with the app.
+# Each router has a prefix and tags for better organization in the API docs.
+for router, prefix, tags in routers:
+    app.include_router(router, prefix=prefix, tags=tags)
 
 # Defines the root ("/") endpoint, returns a welcome message and logs the call.
 @app.get("/")

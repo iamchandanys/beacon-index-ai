@@ -19,17 +19,9 @@ class BlobService:
         :param content_type: MIME type of the document.
         :return: URL of the uploaded document.
         """
-        
         try:
-            
             container = self.client.get_container_client(container_name)
         
-            # Create the container if it does not exist
-            try:
-                container.create_container()
-            except Exception:
-                pass  # container likely exists
-
             blob = container.get_blob_client(blob_name)
             
             blob.upload_blob(
@@ -41,8 +33,34 @@ class BlobService:
             
             # Construct URL
             account_url = self.client.primary_endpoint
+            
             return f"{account_url}{container_name}/{blob_name}"
         
         except Exception as e:
-            
             raise RuntimeError(f"Failed to upload blob: {e}")
+
+    def list_files_in_folder(self, container_name: str, folder_name: str) -> list[str]:
+        """
+        Lists all file URLs in a given folder (prefix) within a container.
+
+        :param container_name: Name of the Azure Blob Storage container.
+        :param folder_name: Folder (prefix) to search within (e.g., 'myfolder/').
+        :return: List of blob URLs.
+        """
+        try:
+            container = self.client.get_container_client(container_name)
+            
+            # Ensure folder_name ends with a slash for prefix matching
+            prefix = folder_name if folder_name.endswith('/') else folder_name + '/'
+            
+            blob_list = container.list_blobs(name_starts_with=prefix)
+            
+            account_url = self.client.primary_endpoint
+            
+            return [
+                f"{account_url}{container_name}/{blob.name}"
+                for blob in blob_list
+            ]
+            
+        except Exception as e:
+            raise RuntimeError(f"Failed to list blobs in folder: {e}")
