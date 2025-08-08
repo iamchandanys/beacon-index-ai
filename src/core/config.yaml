@@ -6,3 +6,6 @@ chat_llm:
     max_tokens: 2048
     max_retries: 2
     top_p: 0.95
+  az_open_ai_embeddings:
+    azure_deployment: text-embedding-ada-002
+    api_version: "2023-05-15"

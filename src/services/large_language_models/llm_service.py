@@ -19,3 +19,12 @@ class LLMService:
             top_p=self.configs['chat_llm']['az_open_ai']['top_p'],
         )
         return azOpenAIllm
+    
+    def getAzOpenAIEmbeddings(self) -> AzureOpenAIEmbeddings:
+        azOpenAIEmbeddings = AzureOpenAIEmbeddings(
+            api_key=self.settings.AZURE_OPENAI_API_KEY,
+            azure_endpoint=self.settings.AZURE_OPENAI_ENDPOINT,
+            model=self.configs['chat_llm']['az_open_ai_embeddings']['azure_deployment'],
+            openai_api_version=self.configs['chat_llm']['az_open_ai_embeddings']['api_version'],
+        )
+        return azOpenAIEmbeddings

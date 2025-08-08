@@ -40,6 +40,29 @@ class DocChatController:
             error_msg = CustomException(str(e), sys).__str__()
             self.log.error("Upload document failed", error_msg=error_msg)
             raise HTTPException(status_code=500, detail=f"Unexpected error during document upload.")
+        
+    async def vectorize_document(self, client_id: str, product_id: str):
+        """
+        Endpoint to vectorize a document for chat analysis.
+        """
+        try:
+            self.log.info("Document vectorization started")
+
+            await self.repository.vectorize_document(client_id=client_id, product_id=product_id)
+
+            self.log.info("Document vectorization completed successfully")
+
+            return {"message": "Document vectorization completed successfully"}
+
+        except ValueError as ve:
+            error_msg = CustomException(str(ve), sys).__str__()
+            self.log.error("Vectorize document failed", error_msg=error_msg)
+            raise HTTPException(status_code=400, detail=f"{error_msg}")
+
+        except Exception as e:
+            error_msg = CustomException(str(e), sys).__str__()
+            self.log.error("Vectorize document failed", error_msg=error_msg)
+            raise HTTPException(status_code=500, detail=f"Unexpected error during document vectorization.")
 
 # Initialize the controller
 doc_chat_controller = DocChatController()
@@ -51,6 +74,11 @@ endpoints = [
         "path": "/upload",
         "method": "post",
         "handler": doc_chat_controller.upload_document
+    },
+    {
+        "path": "/vectorize",
+        "method": "post",
+        "handler": doc_chat_controller.vectorize_document
     }
 ]
 

@@ -1,19 +1,19 @@
 import uuid
-import aiohttp
 import structlog
-import fitz # From PyMuPDF for PDF processing
 
 from src.services.azure_blob_storage.blob_service import BlobService
 from fastapi import UploadFile, File
-from langchain.document_loaders import PyPDFLoader
-from src.utils.chunk_pdf import ChunkPDF
 from src.services.large_language_models.llm_service import LLMService
+from src.services.vector_database.faiss import FaissService
+from langchain.schema import Document
 
 class DocChatRepository:
     def __init__(self):
-        self.blob_service = BlobService()
         self.log = structlog.get_logger(self.__class__.__name__)
-        self.azOpenAIllm = LLMService.getAzOpenAIllm()
+        self.blob_service = BlobService()
+        self.llm_service = LLMService()
+        self.faiss_service = FaissService()
+        self.azOpenAIllm = self.llm_service.getAzOpenAIllm()
     
     async def upload_document(self, client_id: str, product_id: str, data: UploadFile = File(...)) -> str:
         """
@@ -55,10 +55,28 @@ class DocChatRepository:
         return file_url
     
     async def vectorize_document(self, client_id: str, product_id: str) -> None:
-        file_urls = await self.blob_service.list_files_in_folder("document-chat", f"{client_id}/{product_id}/")
+        file_urls = self.blob_service.list_files_in_folder("document-chat", f"{client_id}/{product_id}/")
         
-        text_chunks = []
+        text_chunks: list[Document] = []
         
-        for file_url in file_urls:
-            pdf_chunks = await ChunkPDF(self.azOpenAIllm).chunk_pdf(file_url)
-            text_chunks.extend(pdf_chunks)
+        # for file_url in file_urls:
+        #     chunk_pdf = ChunkPDF(self.azOpenAIllm)
+        #     pdf_chunks = chunk_pdf.chunk_pdf(file_url)
+        #     text_chunks.extend(pdf_chunks)
+        
+        # add dummy data for testing
+        text_chunks.append(Document(page_content="This is a test document content.", metadata={"source": "test_source"}))
+            
+        faiss_service = FaissService()
+
+        vector_store = faiss_service.create_vector_store(client_id, product_id, text_chunks)
+
+        relevant_docs = vector_store.similarity_search("document drafted by whom?", k=5)
+        
+        print("Relevant documents:", relevant_docs)
+        
+    async def chat(self, client_id: str, product_id: str, query: str) -> str:
+        vector_store = self.faiss_service.load_vector_store(client_id, product_id)
+
+        retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 5})
+        

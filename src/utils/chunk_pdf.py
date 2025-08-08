@@ -1,9 +1,9 @@
 import json
 import pdfplumber
 import requests
+import structlog
 
 from src.services.prompts.prompt_service import doc_analyse_prompt
-from src.services.large_language_models.llm_service import LLMService
 from typing import List
 from io import BytesIO
 from langchain.schema import Document
@@ -33,29 +33,28 @@ class ChunkPDF:
     
     def __init__(self, azOpenA_llm):
         self.azOpenA_llm = azOpenA_llm
+        self.log = structlog.get_logger(self.__class__.__name__)
         
     def _jsonify_tables(self, tables: List[List[List[str | None]]]) -> list[str | dict]:
         tables_json = []
-            
-        for table in tables:
+        
+        for idx, table in enumerate(tables):
             rows = ""
             
             for row in table:
-                # Filter out empty rows. Example: ["", "name", "age", None, "city"] -> ["name", "age", "city"]
                 filtered_row = [col for col in row if col not in ('', None)]
-                # Structure the row. Example: "name | age | city"
                 final_row = " | ".join([x.strip().replace('\n', '') for x in filtered_row])
-                # Add the structured row to the rows string
                 rows += final_row + "\n"
-                
-            chain = doc_analyse_prompt | self.azOpenAIllm
+            
+            chain = doc_analyse_prompt | self.azOpenA_llm
+            self.log.debug("Invoking LLM for table analysis", table_index=idx)
             
             response = chain.invoke({
                 "table_content": rows
             })
             
             tables_json.append(response.content)
-            
+        
         return tables_json
     
     def _pretty_print_json(self, json_data: str) -> str:
@@ -90,7 +89,7 @@ class ChunkPDF:
                 j_tables = self._jsonify_tables(tables)
 
                 # Pretty print the JSON tables. This will format the JSON tables for better readability
-                pretty_tables = [self.pretty_print_json(tbl) for tbl in j_tables] if j_tables else []
+                pretty_tables = [self._pretty_print_json(tbl) for tbl in j_tables] if j_tables else []
 
                 # Add text to the documents list
                 doucments.append(Document(page_content=text, metadata={"page": page.page_number}))
