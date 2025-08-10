@@ -1,16 +1,21 @@
 import uuid
 import structlog
 
-from src.services.azure_blob_storage.blob_service import BlobService
 from fastapi import UploadFile, File
+from langchain.schema import Document
+from datetime import datetime, timezone
+from src.services.azure_blob_storage.blob_service import BlobService
 from src.services.large_language_models.llm_service import LLMService
 from src.services.vector_database.faiss import FaissService
-from langchain.schema import Document
+from src.services.cosmos_service.cosmos_service import CosmosService
+from src.models.doc_chat_model import DocChatModel
+from src.utils.chunk_pdf import ChunkPDF
 
 class DocChatRepository:
     def __init__(self):
         self.log = structlog.get_logger(self.__class__.__name__)
         self.blob_service = BlobService()
+        self.cosmos_service = CosmosService()
         self.llm_service = LLMService()
         self.faiss_service = FaissService()
         self.azOpenAIllm = self.llm_service.getAzOpenAIllm()
@@ -59,14 +64,15 @@ class DocChatRepository:
         
         text_chunks: list[Document] = []
         
-        # for file_url in file_urls:
-        #     chunk_pdf = ChunkPDF(self.azOpenAIllm)
-        #     pdf_chunks = chunk_pdf.chunk_pdf(file_url)
-        #     text_chunks.extend(pdf_chunks)
-        
-        # add dummy data for testing
-        text_chunks.append(Document(page_content="This is a test document content.", metadata={"source": "test_source"}))
+        for file_url in file_urls:
+            chunk_pdf = ChunkPDF(self.azOpenAIllm)
+            pdf_chunks = chunk_pdf.chunk_pdf(file_url)
+            text_chunks.extend(pdf_chunks)
             
+        if len(text_chunks) <= 0:
+            self.log.error("No text chunks found for document vectorization")
+            raise ValueError("No text chunks found for document vectorization")
+
         faiss_service = FaissService()
 
         vector_store = faiss_service.create_vector_store(client_id, product_id, text_chunks)
@@ -74,7 +80,20 @@ class DocChatRepository:
         relevant_docs = vector_store.similarity_search("document drafted by whom?", k=5)
         
         print("Relevant documents:", relevant_docs)
+
+    def init_chat(self, client_id: str, product_id: str):
+        now_str = datetime.now(timezone.utc).isoformat()
         
+        doc_chat_model = DocChatModel()
+        doc_chat_model["id"] = str(uuid.uuid4())
+        doc_chat_model["client_id"] = client_id
+        doc_chat_model["product_id"] = product_id
+        doc_chat_model["messages"] = []
+        doc_chat_model["createdAt"] = now_str
+        doc_chat_model["updatedAt"] = now_str
+        
+        self.cosmos_service.init_chat(doc_chat_model)
+
     async def chat(self, client_id: str, product_id: str, query: str) -> str:
         vector_store = self.faiss_service.load_vector_store(client_id, product_id)
 

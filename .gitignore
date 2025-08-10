@@ -212,4 +212,4 @@ Notebook/logs/
 
 .vscode/
 notebook/data/
-vector_faiss_store/
+faiss_vector_store/

@@ -17,3 +17,4 @@ uvicorn # For running the FastAPI server
 python-multipart # For handling file uploads
 azure-storage-blob # For Azure Blob Storage operations
 opencensus-ext-azure # For Azure monitoring
+azure-cosmos # For Azure Cosmos DB operations

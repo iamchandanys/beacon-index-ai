@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     AZURE_OPENAI_API_KEY: str
     AZURE_OPENAI_ENDPOINT: str
     AZURE_MONITOR_CONN_STR: str
+    AZ_EMC_COSMOS_DB_CONNECTION_STRING: str
+    AZ_EMC_COSMOS_DB_SITES_DATABASE_NAME: str
+    AZ_EMC_COSMOS_DB_CHAT_HISTORY_CONTAINER_NAME: str
 
     class Config:
         env_file = ".env"
