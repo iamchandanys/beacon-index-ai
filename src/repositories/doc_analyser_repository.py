@@ -3,14 +3,14 @@ import uuid
 import structlog
 import fitz # From PyMuPDF for PDF processing
 
-from src.services.azure_blob_storage.blob_service import BlobService
-from src.services.large_language_models.llm_service import LLMService
-from src.services.prompts.prompt_service import *
-from src.models.doc_analyser_model import DocAnalyserMetadata
 from fastapi import UploadFile, File
 from datetime import datetime
 from langchain.output_parsers import OutputFixingParser
 from langchain_core.output_parsers import JsonOutputParser
+from src.services.azure.blob import BlobService
+from src.services.llm.providers import LLMService
+from src.services.prompts.prompting import *
+from src.models.doc_analyser_model import DocAnalyserMetadata
 
 class DocAnalyserRepository:
     def __init__(self):

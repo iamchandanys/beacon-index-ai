@@ -7,14 +7,14 @@ from datetime import datetime, timezone
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnableLambda
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
-from src.services.azure_blob_storage.blob_service import BlobService
-from src.services.large_language_models.llm_service import LLMService
-from src.services.vector_database.faiss import FaissService
-from src.services.cosmos_service.cosmos_service import CosmosService
+from src.services.azure.blob import BlobService
+from src.services.llm.providers import LLMService
+from src.services.vectorstores.faiss_store import FaissService
+from src.services.azure.cosmos import CosmosService
 from src.models.doc_chat_model import DocChatModel
 from src.models.requests import ChatRequest
-from src.utils.chunk_pdf import ChunkPDF
-from src.services.prompts.prompt_service import contextualize_question_prompt, context_qa_prompt
+from src.services.extractors.pdf_chunker import ChunkPDF
+from src.services.prompts.prompting import contextualize_question_prompt, context_qa_prompt
 
 class DocChatRepository:
     def __init__(self):
@@ -35,7 +35,12 @@ class DocChatRepository:
         :return: URL of the uploaded document.
         """
         self.log.info("Validating uploaded file", filename=data.filename)
-        
+
+        # Throw error if client_id or product_id is not provided
+        if not client_id or not product_id:
+            self.log.error("Client ID or Product ID is not provided")
+            raise ValueError("Client ID and Product ID must be provided.")
+
         # Validate the file is not empty
         if data.file is None or data.file.closed:
             self.log.error("File is empty or not provided")
@@ -46,10 +51,10 @@ class DocChatRepository:
             self.log.error("Invalid file type", content_type=data.content_type)
             raise ValueError("Only PDF files are allowed.")
         
-        # Validate the file size (limit to 2 MB)
-        if data.size > 2 * 1024 * 1024:  # 2 MB limit
+        # Validate the file size (limit to 5 MB)
+        if data.size > 5 * 1024 * 1024:  # 5 MB limit
             self.log.error("File size exceeds limit", size=data.size)
-            raise ValueError("File size exceeds the 2 MB limit.")
+            raise ValueError("File size exceeds the 5 MB limit.")
         
         blob_name = f"{uuid.uuid4()}.pdf"
         content_type = "application/pdf"
@@ -65,6 +70,11 @@ class DocChatRepository:
         return file_url
     
     async def vectorize_document(self, client_id: str, product_id: str) -> None:
+        # Throw error if client_id or product_id is not provided
+        if not client_id or not product_id:
+            self.log.error("Client ID or Product ID is not provided")
+            raise ValueError("Client ID and Product ID must be provided.")
+        
         file_urls = self.blob_service.list_files_in_folder("document-chat", f"{client_id}/{product_id}/")
         
         text_chunks: list[Document] = []
@@ -81,9 +91,10 @@ class DocChatRepository:
         faiss_service = FaissService()
 
         faiss_service.create_vector_store(client_id, product_id, text_chunks)
-        
 
     def init_chat(self, client_id: str, product_id: str) -> DocChatModel:
+        self.log.info("Initializing new chat", client_id=client_id, product_id=product_id)
+
         now_str = datetime.now(timezone.utc).isoformat()
         
         doc_chat_model = DocChatModel()
@@ -95,7 +106,9 @@ class DocChatRepository:
         doc_chat_model["updatedAt"] = now_str
         
         chat_details = self.cosmos_service.init_chat(doc_chat_model)
-        
+
+        self.log.info("Chat initialized successfully", chat_id=doc_chat_model["id"])
+
         return chat_details
 
     @staticmethod

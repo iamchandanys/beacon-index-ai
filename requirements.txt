@@ -1,20 +1,22 @@
-pydantic # For settings management
-pydantic_settings # For settings management
-setuptools
-python-dotenv
-ipykernel
-langchain
-langchain_community
-langchain_groq
-langchain_google_genai
-langchain_openai
-pypdf
-faiss-cpu
-structlog
-PyMuPDF # For PDF processing
-FastAPI # For building APIs
-uvicorn # For running the FastAPI server
-python-multipart # For handling file uploads
-azure-storage-blob # For Azure Blob Storage operations
-opencensus-ext-azure # For Azure monitoring
-azure-cosmos # For Azure Cosmos DB operations
+pydantic==2.11.7 # For data validation and settings management
+pydantic_settings==2.10.1 # For settings management
+setuptools==80.9.0
+python-dotenv==1.1.1
+ipykernel==6.30.1
+langchain==0.3.27
+langchain_community==0.3.27
+langchain_groq==0.3.6
+langchain_google_genai==2.1.9
+langchain_openai==0.3.28
+pypdf==5.9.0
+faiss-cpu==1.11.0.post1
+structlog==25.4.0
+PyMuPDF==1.26.3 # For PDF processing
+FastAPI==0.116.1 # For building APIs
+uvicorn==0.35.0 # For running the FastAPI server
+python-multipart==0.0.20 # For handling file uploads
+azure-storage-blob==12.26.0 # For Azure Blob Storage operations
+opencensus-ext-azure==1.1.15 # For Azure monitoring
+azure-cosmos==4.9.0 # For Azure Cosmos DB operations
+
+-e . # <- lets you edit your code and see changes instantly when running or importing your package.

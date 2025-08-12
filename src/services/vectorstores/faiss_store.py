@@ -1,7 +1,7 @@
 import os
 
 from langchain.vectorstores import FAISS
-from src.services.large_language_models.llm_service import LLMService
+from src.services.llm.providers import LLMService
 from langchain.schema import Document
 
 class FaissService:

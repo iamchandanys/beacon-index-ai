@@ -3,7 +3,7 @@ import pdfplumber
 import requests
 import structlog
 
-from src.services.prompts.prompt_service import doc_analyse_prompt
+from src.services.prompts.prompting import doc_analyse_prompt
 from typing import List
 from io import BytesIO
 from langchain.schema import Document

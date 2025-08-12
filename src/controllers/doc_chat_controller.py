@@ -35,7 +35,7 @@ class DocChatController:
         except ValueError as ve:
             error_msg = CustomException(str(ve), sys).__str__()
             self.log.error("Upload document failed", error_msg=error_msg)
-            raise HTTPException(status_code=400, detail=f"{error_msg}")
+            raise HTTPException(status_code=400, detail=f"{ve}")
         
         except Exception as e:
             error_msg = CustomException(str(e), sys).__str__()
@@ -58,7 +58,7 @@ class DocChatController:
         except ValueError as ve:
             error_msg = CustomException(str(ve), sys).__str__()
             self.log.error("Vectorize document failed", error_msg=error_msg)
-            raise HTTPException(status_code=400, detail=f"{error_msg}")
+            raise HTTPException(status_code=400, detail=f"{ve}")
 
         except Exception as e:
             error_msg = CustomException(str(e), sys).__str__()
@@ -93,7 +93,7 @@ class DocChatController:
         except ValueError as ve:
             error_msg = CustomException(str(ve), sys).__str__()
             self.log.error("Chat request failed", error_msg=error_msg)
-            raise HTTPException(status_code=400, detail=f"{error_msg}")
+            raise HTTPException(status_code=400, detail=f"{ve}")
 
         except Exception as e:
             error_msg = CustomException(str(e), sys).__str__()
