@@ -4,12 +4,17 @@ import structlog
 from fastapi import UploadFile, File
 from langchain.schema import Document
 from datetime import datetime, timezone
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnableLambda
+from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from src.services.azure_blob_storage.blob_service import BlobService
 from src.services.large_language_models.llm_service import LLMService
 from src.services.vector_database.faiss import FaissService
 from src.services.cosmos_service.cosmos_service import CosmosService
 from src.models.doc_chat_model import DocChatModel
+from src.models.requests import ChatRequest
 from src.utils.chunk_pdf import ChunkPDF
+from src.services.prompts.prompt_service import contextualize_question_prompt, context_qa_prompt
 
 class DocChatRepository:
     def __init__(self):
@@ -75,13 +80,10 @@ class DocChatRepository:
 
         faiss_service = FaissService()
 
-        vector_store = faiss_service.create_vector_store(client_id, product_id, text_chunks)
-
-        relevant_docs = vector_store.similarity_search("document drafted by whom?", k=5)
+        faiss_service.create_vector_store(client_id, product_id, text_chunks)
         
-        print("Relevant documents:", relevant_docs)
 
-    def init_chat(self, client_id: str, product_id: str):
+    def init_chat(self, client_id: str, product_id: str) -> DocChatModel:
         now_str = datetime.now(timezone.utc).isoformat()
         
         doc_chat_model = DocChatModel()
@@ -92,10 +94,101 @@ class DocChatRepository:
         doc_chat_model["createdAt"] = now_str
         doc_chat_model["updatedAt"] = now_str
         
-        self.cosmos_service.init_chat(doc_chat_model)
-
-    async def chat(self, client_id: str, product_id: str, query: str) -> str:
-        vector_store = self.faiss_service.load_vector_store(client_id, product_id)
-
-        retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 5})
+        chat_details = self.cosmos_service.init_chat(doc_chat_model)
         
+        return chat_details
+
+    @staticmethod
+    def _format_docs(docs: list[Document]) -> str:
+        return "\n\n".join([doc.page_content for doc in docs])
+
+    def _get_chat_history(self, chat_id: str) -> list[AIMessage | HumanMessage | SystemMessage]:
+        self.log.info("Fetching chat details", chat_id=chat_id)
+        
+        chat_history: list[AIMessage | HumanMessage | SystemMessage] = []
+
+        chat_details = self.cosmos_service.get_chat(chat_id)
+
+        for message in chat_details["messages"]:
+            for content in message["content"]:
+                if message["role"] == "system":
+                    chat_history.append(SystemMessage(content["text"]))
+                elif message["role"] == "user":
+                    chat_history.append(HumanMessage(content["text"]))
+                elif message["role"] == "assistant":
+                    chat_history.append(AIMessage(content["text"]))
+
+        self.log.info("Chat history fetched successfully", chat_id=chat_id, history_length=len(chat_history))
+        
+        return chat_history
+    
+    def _update_chat_history(self, chat_id: str, user_message: str, assistant_message: str) -> None:
+        self.log.info("Updating chat history", chat_id=chat_id)
+
+        chat_details = self.cosmos_service.get_chat(chat_id)
+
+        # Append user message
+        chat_details["messages"].append({
+            "role": "user",
+            "content": [{"text": user_message, "type": "text", "tokensUsed": 0}]
+        })
+
+        # Append assistant message
+        chat_details["messages"].append({
+            "role": "assistant",
+            "content": [{"text": assistant_message, "type": "text", "tokensUsed": 0}]
+        })
+
+        self.cosmos_service.update_chat(chat_details)
+        
+        self.log.info("Chat history updated successfully", chat_id=chat_id, messages_count=len(chat_details["messages"]))
+    
+    def chat(self, chat_request: ChatRequest) -> str:
+        self.log.info("Loading vector store", client_id=chat_request["client_id"], product_id=chat_request["product_id"])
+
+        # Load the vector store
+        vector_store = self.faiss_service.load_vector_store(chat_request["client_id"], chat_request["product_id"])
+
+        # Create retriever from vector store
+        retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 5})
+
+        self.log.info("Preparing question rewriter and retrieval chain")
+
+        # Rewrite user question with chat history context
+        question_rewriter = (
+            {
+                "input": RunnableLambda(lambda x: x["question"]), 
+                "chat_history": RunnableLambda(lambda x: x["chat_history"])
+            }
+            | contextualize_question_prompt | self.azOpenAIllm | StrOutputParser()
+        )
+
+        # Retrieve docs for rewritten question
+        retrieve_docs = question_rewriter | retriever | self._format_docs
+
+        # Answer using retrieved docs + original input + chat history
+        chain = (
+            {
+                "context": retrieve_docs,
+                "input": RunnableLambda(lambda x: x["question"]),
+                "chat_history": RunnableLambda(lambda x: x["chat_history"]),
+            }
+            | context_qa_prompt | self.azOpenAIllm | StrOutputParser()
+        )
+
+        self.log.info("Invoking chain for response generation")
+
+        # Invoke the chain
+        result = chain.invoke(
+            {
+                "question": chat_request["query"],
+                "chat_history": self._get_chat_history(chat_request["chat_id"]),
+            }
+        )
+
+        self.log.info("Updating chat details with new messages")
+
+        # Update the chat history
+        self._update_chat_history(chat_request["chat_id"], chat_request["query"], result)
+
+        return result

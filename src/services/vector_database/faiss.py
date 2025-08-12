@@ -30,6 +30,6 @@ class FaissService:
         """Load a FAISS vector store from a file."""
         vector_store_dir = os.path.join("faiss_vector_store", client_id, product_id)
         
-        vector_store = FAISS.load_local(vector_store_dir, self.azOpenAIEmbeddings)
+        vector_store = FAISS.load_local(vector_store_dir, self.azOpenAIEmbeddings, allow_dangerous_deserialization=True)
         
         return vector_store

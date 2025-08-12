@@ -6,6 +6,7 @@ from src.utils.custom_exception import CustomException
 from fastapi import UploadFile, File
 from fastapi import HTTPException
 from src.repositories.doc_chat_repository import DocChatRepository
+from src.models.requests import ChatRequest
 
 router = APIRouter()
 
@@ -68,16 +69,36 @@ class DocChatController:
         try:
             self.log.info("Initializing chat", client_id=client_id, product_id=product_id)
 
-            self.repository.init_chat(client_id=client_id, product_id=product_id)
+            chat_details = self.repository.init_chat(client_id=client_id, product_id=product_id)
 
             self.log.info("Chat initialized successfully")
 
-            return {"message": "Chat initialized successfully"}
+            return chat_details
 
         except Exception as e:
             error_msg = CustomException(str(e), sys).__str__()
             self.log.error("Init chat failed", error_msg=error_msg)
             raise HTTPException(status_code=500, detail=f"Unexpected error during chat initialization.")
+        
+    def chat(self, chat_request: ChatRequest):
+        try:
+            self.log.info("Chat request received", chat_request=chat_request)
+
+            response = self.repository.chat(chat_request)
+
+            self.log.info("Chat response generated successfully", response=response)
+
+            return {"response": response}
+
+        except ValueError as ve:
+            error_msg = CustomException(str(ve), sys).__str__()
+            self.log.error("Chat request failed", error_msg=error_msg)
+            raise HTTPException(status_code=400, detail=f"{error_msg}")
+
+        except Exception as e:
+            error_msg = CustomException(str(e), sys).__str__()
+            self.log.error("Chat request failed", error_msg=error_msg)
+            raise HTTPException(status_code=500, detail=f"Unexpected error during chat processing.")
 
 # Initialize the controller
 doc_chat_controller = DocChatController()
@@ -99,6 +120,11 @@ endpoints = [
         "path": "/init_chat",
         "method": "post",
         "handler": doc_chat_controller.init_chat
+    },
+    {
+        "path": "/chat",
+        "method": "post",
+        "handler": doc_chat_controller.chat
     }
 ]
 

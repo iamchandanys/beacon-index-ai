@@ -26,18 +26,17 @@ class CosmosService:
         except exceptions.CosmosHttpResponseError as e:
             raise RuntimeError(f"An error occurred while creating the chat: {e}")
 
-    def get_chat(self, id: str, client_id: str, product_id: str) -> DocChatModel:
+    def get_chat(self, id: str) -> DocChatModel:
         """
         Retrieve a chat by its ID from the Cosmos DB.
         :param id: The ID of the chat to retrieve.
-        :param client_id: The client ID for the partition key.
-        :param product_id: The product ID for the partition key.
+        
         :return: DocChatModel object if found, None otherwise.
         """
         try:
             response = self.container.read_item(
                 item=id,
-                partition_key=[client_id, product_id]
+                partition_key=[id]
             )
             return response
         
