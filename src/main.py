@@ -2,6 +2,7 @@ import structlog
 import uuid
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from src.controllers.doc_analyser_controller import router as doc_analyser_router
 from src.controllers.doc_chat_controller import router as doc_chat_router
 from src.utils.az_logger import az_logging
@@ -28,6 +29,15 @@ app = FastAPI(
     docs_url="/docs",  # Swagger UI
     redoc_url="/redoc", # ReDoc UI
     lifespan=lifespan,
+)
+
+# To enable CORS
+app.middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for CORS
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Middleware adds request-specific context (like request ID) to logs for better traceability.

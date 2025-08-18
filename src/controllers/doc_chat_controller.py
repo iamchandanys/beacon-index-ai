@@ -5,6 +5,7 @@ from fastapi import APIRouter, status
 from src.utils.custom_exception import CustomException
 from fastapi import UploadFile, File
 from fastapi import HTTPException
+from fastapi.responses import JSONResponse
 from src.repositories.doc_chat_repository import DocChatRepository
 from src.models.requests import ChatRequest
 
@@ -53,7 +54,7 @@ class DocChatController:
 
             self.log.info("Document vectorization completed successfully")
 
-            return {"message": "Document vectorization completed successfully"}
+            return JSONResponse(content="Document vectorization completed successfully")
 
         except ValueError as ve:
             error_msg = CustomException(str(ve), sys).__str__()
@@ -88,7 +89,7 @@ class DocChatController:
 
             self.log.info("Chat response generated successfully", response=response)
 
-            return {"response": response}
+            return JSONResponse(content=response)
 
         except ValueError as ve:
             error_msg = CustomException(str(ve), sys).__str__()
