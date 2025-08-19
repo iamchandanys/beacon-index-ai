@@ -8,21 +8,23 @@ ENV PYTHONUNBUFFERED=1
 # Set working directory
 WORKDIR /app
 
-# Install OS dependencies
-# In simple words: It prepares the system to build software and handle PDF files, then removes unnecessary files to save space.
+# Update package lists, install build-essential and poppler-utils, then clean up apt cache to reduce image size
 RUN apt-get update && apt-get install -y build-essential poppler-utils && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
+# Copy requirements file to /app folder
 COPY requirements.txt .
 
-# Copy project files
+# Copy .env file to /app folder
+COPY .env .
+
+# Copy project files to /app folder
 COPY . .
 
 # Install project dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Expose the API port
-EXPOSE 8000
+EXPOSE 8080
 
 # Start the FastAPI application
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]

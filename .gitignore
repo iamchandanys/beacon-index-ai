@@ -213,3 +213,4 @@ Notebook/logs/
 .vscode/
 notebook/data/
 faiss_vector_store/
+beacon_index_ai.egg-info/

@@ -1,6 +1,6 @@
 import os
 
-from langchain.vectorstores import FAISS
+from langchain_community.vectorstores import FAISS
 from src.services.llm.providers import LLMService
 from langchain.schema import Document
 

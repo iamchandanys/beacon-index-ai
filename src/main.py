@@ -32,9 +32,9 @@ app = FastAPI(
 )
 
 # To enable CORS
-app.middleware(
+app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for CORS
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

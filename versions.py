@@ -15,6 +15,7 @@ packages = [
     "faiss-cpu",
     "structlog",
     "PyMuPDF",
+    "pdfplumber",
     "FastAPI",
     "uvicorn",
     "python-multipart",
