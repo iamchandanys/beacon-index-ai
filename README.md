@@ -1,4 +1,4 @@
-# BEACON INDEX AI (API) 🚀
+# Beacon Index AI (API) 🚀
 
 ## Environment Setup
 
