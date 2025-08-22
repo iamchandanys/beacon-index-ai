@@ -5,17 +5,17 @@
 Create a `.env` file in the project root with the following fields:
 
 ```
-AZURE_STORAGE_CONN_STR=your-azure-storage-connection-string
-AZURE_OPENAI_API_KEY=your-azure-openai-api-key
-AZURE_OPENAI_ENDPOINT=your-azure-openai-endpoint
-AZURE_MONITOR_CONN_STR=your-azure-monitor-connection-string
+AZURE_OPENAI_API_KEY=your-openai-api-key-here
+AZURE_OPENAI_ENDPOINT=https://your-openai-endpoint-placeholder
+AZURE_OPENAI_GPT_4O_FULL_ENDPOINT=https://your-gpt-4o-endpoint-placeholder
+AZURE_CONTENT_SAFETY_ENDPOINT=https://your-content-safety-endpoint-placeholder
+AZURE_CONTENT_SAFETY_KEY=your-content-safety-key-here
+AZURE_STORAGE_CONN_STR=your-storage-connection-string-here
+AZURE_MONITOR_CONN_STR=your-monitor-connection-string-here
+AZ_EMC_COSMOS_DB_CONNECTION_STRING=your-cosmos-db-connection-string-here
+AZ_EMC_COSMOS_DB_SITES_DATABASE_NAME=your-sites-database-name-here
+AZ_EMC_COSMOS_DB_CHAT_HISTORY_CONTAINER_NAME=your-chat-history-container-name-here
 ```
-
-## Key Utility Modules
-
-- [`az_logger`](src/utils/az_logger.py) – Azure Monitor and console logging setup.
-- [`custom_exception`](src/utils/custom_exception.py) – Custom exception class for detailed error reporting.
-- [`azure_blob_storage.blob_service`](src/services/azure_blob_storage/blob_service.py) – Azure Blob Storage upload service.
 
 ## Running the FastAPI Application
 
