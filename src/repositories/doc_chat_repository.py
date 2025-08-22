@@ -10,7 +10,7 @@ from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from src.services.azure.blob import BlobService
 from src.services.llm.providers import LLMService
 from src.services.vectorstores.faiss_store import FaissService
-from src.services.azure.cosmos import CosmosService
+from src.services.azure.xcosmos import CosmosService
 from src.models.doc_chat_model import DocChatModel
 from src.models.requests import ChatRequest
 from src.services.extractors.pdf_chunker import ChunkPDF

@@ -12,7 +12,7 @@ pypdf==5.9.0
 faiss-cpu==1.11.0.post1
 structlog==25.4.0
 pdfplumber==0.11.7 # For PDF processing
-PyMuPDF==1.26.3 # For PDF processing
+PyMuPDF==1.26.3 # For PDF processing (Not using anymore)
 FastAPI==0.116.1 # For building APIs
 uvicorn==0.35.0 # For running the FastAPI server
 python-multipart==0.0.20 # For handling file uploads
