@@ -1,4 +1,4 @@
-# llmops-workshop-document-portal
+# BEACON INDEX AI (API)
 
 ## Environment Setup
 
