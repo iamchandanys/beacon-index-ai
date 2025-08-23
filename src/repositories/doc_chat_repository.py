@@ -10,10 +10,13 @@ from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from src.services.azure.blob import BlobService
 from src.services.llm.providers import LLMService
 from src.services.vectorstores.faiss_store import FaissService
-from src.services.azure.xcosmos import CosmosService
+# from src.services.azure.xcosmos import CosmosService
+from src.services.azure.cosmos import CosmosService
 from src.models.doc_chat_model import DocChatModel
 from src.models.requests import ChatRequest
+from src.models.view_models.documents_view_model import DocumentsViewModel
 from src.services.extractors.pdf_chunker import ChunkPDF
+from src.services.extractors.docling_file_extractor import DoclingFileExtractor
 from src.services.prompts.prompting import contextualize_question_prompt, context_qa_prompt
 
 class DocChatRepository:
@@ -69,6 +72,54 @@ class DocChatRepository:
         
         return file_url
     
+    async def sync_documents(self, client_id: str, product_id: str):
+        # Validate input
+        if not client_id or not product_id:
+            self.log.error("Client ID or Product ID is not provided")
+            raise ValueError("Client ID and Product ID must be provided.")
+
+        # List files from blob storage
+        # Todo: Make it async
+        file_urls = self.blob_service.list_files_in_folder("document-chat", f"{client_id}/{product_id}/")
+        
+        if not file_urls:
+            self.log.error("No files found in blob storage", client_id=client_id, product_id=product_id)
+            raise ValueError(f"No files found for client_id '{client_id}' and product_id '{product_id}' in blob storage.")
+
+        # Query documents from Cosmos DB
+        documents = await self.cosmos_service.query_items_async(
+            "documents",
+            "SELECT * FROM c WHERE c.client_id = @client_id AND c.product_id = @product_id",
+            [
+                {"name": "@client_id", "value": client_id},
+                {"name": "@product_id", "value": product_id}
+            ]
+        )
+
+        docling_file_extractor = DoclingFileExtractor()
+        documents_list = list(documents)
+        chunked_docs: list[Document] = []
+
+        # Chunk files
+        for url in file_urls:
+            # Todo: Make it async
+            chunked_docs.extend(docling_file_extractor.chunk_file(url))
+
+        # Create or update document record
+        if len(documents_list) == 0:
+            self.log.info("Creating new document record", client_id=client_id, product_id=product_id)
+            documents_view_model = DocumentsViewModel(
+                client_id=client_id,
+                product_id=product_id,
+                chunked_documents=chunked_docs
+            )
+            await self.cosmos_service.create_item_async("documents", documents_view_model.model_dump())
+        else:
+            self.log.info("Updating existing document record", client_id=client_id, product_id=product_id)
+            document: DocumentsViewModel = documents_list[0]
+            document["chunked_documents"] = [doc.__dict__ for doc in chunked_docs]
+            await self.cosmos_service.update_item_async("documents", document)
+
     async def vectorize_document(self, client_id: str, product_id: str) -> None:
         # Throw error if client_id or product_id is not provided
         if not client_id or not product_id:

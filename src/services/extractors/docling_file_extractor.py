@@ -9,7 +9,7 @@ from docling_core.types.doc import ImageRefMode
 from langchain.schema import Document
 from src.core.app_settings import get_settings
 
-class DoclingPDFExtractor:
+class DoclingFileExtractor:
     def __init__(self):
         self.app_settings = get_settings()
         self.log = structlog.get_logger(self.__class__.__name__)
@@ -119,13 +119,13 @@ class DoclingPDFExtractor:
         
         return documents
     
-    def chunk_pdf(self, file_url: str) -> list[Document]:
+    def chunk_file(self, file_url: str) -> list[Document]:
         """
-        Splits a PDF file into chunks and returns a list of Document objects.
+        Splits a file into chunks and returns a list of Document objects.
         Args:
-            file_url (str): The path or URL to the PDF file.
+            file_url (str): The path or URL to the file.
         Returns:
-            list[Document]: A list of Document objects extracted from the PDF.
+            list[Document]: A list of Document objects extracted from the file.
         """
         mark_down = self.__get_file_markdown(file_url=file_url)
         documents = self.__get_file_documents(mark_down=mark_down)
@@ -133,5 +133,5 @@ class DoclingPDFExtractor:
         return documents
     
 if __name__ == "__main__":
-    pdf_extractor = DoclingPDFExtractor()
-    pdf_extractor.chunk_pdf("https://emcdevstoragev2.blob.core.windows.net/public/efba9f0b-70cc-4dab-b6b7-5812a22c0c37.pdf")
+    file_extractor = DoclingFileExtractor()
+    file_extractor.chunk_file("https://emcdevstoragev2.blob.core.windows.net/public/efba9f0b-70cc-4dab-b6b7-5812a22c0c37.pdf")
