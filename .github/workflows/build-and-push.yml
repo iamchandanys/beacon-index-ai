@@ -2,18 +2,32 @@ name: Build & Push to ACR
 
 on:
   push:
-    branches: ["dev"] # change to "main" if you prefer
-    tags: ["v*"] # build on version tags too
+    branches: ["dev", "main"] # keep or edit as you like
+    tags: ["v*"] # build on version tags too (e.g., v1.2.3)
   workflow_dispatch:
 
+# Needed for OIDC (azure/login) and to read the repo
 permissions:
   contents: read
-  id-token: write # REQUIRED for OIDC → azure/login
+  id-token: write
 
+# Expect these repo-level items to be set:
+#   Actions → Variables:
+#     - ACR_NAME = emcdevacr-c9f8cyh8hzhzb4d3
+#     - ACR_LOGIN_SERVER = emcdevacr-c9f8cyh8hzhzb4d3.azurecr.io
+#   Actions → Secrets:
+#     - AZURE_TENANT_ID
+#     - AZURE_SUBSCRIPTION_ID
+#     - AZURE_CLIENT_ID
 env:
   IMAGE_NAME: beacon-index-ai
   ACR_NAME: ${{ vars.ACR_NAME }}
   ACR_LOGIN_SERVER: ${{ vars.ACR_LOGIN_SERVER }}
+
+# Avoid overlapping builds for same ref
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-push:
@@ -23,33 +37,49 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Azure login (OIDC; no secrets)
+      - name: Azure login (OIDC; no client secret)
         uses: azure/login@v2
         with:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
 
+      # Use the short registry resource name here (NOT the login server)
       - name: Log in to ACR using Azure session
-        run: az acr login --name "${{ vars.ACR_NAME }}"
-
-      - name: Set image tags
-        id: tags
-        shell: bash
-        run: |
-          # latest on main/dev, version on tags, always tag by short sha
-          if [[ "${GITHUB_REF}" == refs/heads/* ]]; then
-            echo "TAG1=latest" >> $GITHUB_OUTPUT
-          fi
-          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            echo "TAG2=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-          fi
-          echo "TAG3=sha-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+        run: az acr login --name "${{ env.ACR_NAME }}"
 
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build & push
+      # Build tag list only with non-empty values to avoid "invalid reference format"
+      - name: Set image tags safely
+        id: tags
+        shell: bash
+        env:
+          ACR_LOGIN_SERVER: ${{ env.ACR_LOGIN_SERVER }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+        run: |
+          # Always tag by short SHA
+          TAGS="${ACR_LOGIN_SERVER}/${IMAGE_NAME}:sha-${GITHUB_SHA::7}"
+
+          # Add "latest" on branch builds
+          if [[ "${GITHUB_REF}" == refs/heads/* ]]; then
+            TAGS+=$'\n'"${ACR_LOGIN_SERVER}/${IMAGE_NAME}:latest"
+          fi
+
+          # Add version tag on tag builds
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/}"
+            TAGS+=$'\n'"${ACR_LOGIN_SERVER}/${IMAGE_NAME}:${VERSION}"
+          fi
+
+          {
+            echo "TAGS<<'EOF'"
+            echo "${TAGS}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build & push image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -57,9 +87,6 @@ jobs:
           platforms: linux/amd64
           push: true
           provenance: false
-          tags: |
-            ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ steps.tags.outputs.TAG3 }}
-            ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ steps.tags.outputs.TAG1 }}
-            ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ steps.tags.outputs.TAG2 }}
+          tags: ${{ steps.tags.outputs.TAGS }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
