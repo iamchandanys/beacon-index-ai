@@ -1,0 +1,65 @@
+name: Build & Push to ACR
+
+on:
+  push:
+    branches: ["dev"] # change to "main" if you prefer
+    tags: ["v*"] # build on version tags too
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # REQUIRED for OIDC → azure/login
+
+env:
+  IMAGE_NAME: beacon-index-ai
+  ACR_NAME: ${{ vars.ACR_NAME }}
+  ACR_LOGIN_SERVER: ${{ vars.ACR_LOGIN_SERVER }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure login (OIDC; no secrets)
+        uses: azure/login@v2
+        with:
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+
+      - name: Log in to ACR using Azure session
+        run: az acr login --name "$ACR_NAME"
+
+      - name: Set image tags
+        id: tags
+        shell: bash
+        run: |
+          # latest on main/dev, version on tags, always tag by short sha
+          if [[ "${GITHUB_REF}" == refs/heads/* ]]; then
+            echo "TAG1=latest" >> $GITHUB_OUTPUT
+          fi
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "TAG2=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+          echo "TAG3=sha-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          push: true
+          provenance: false
+          tags: |
+            ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ steps.tags.outputs.TAG3 }}
+            ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ steps.tags.outputs.TAG1 }}
+            ${{ env.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ steps.tags.outputs.TAG2 }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

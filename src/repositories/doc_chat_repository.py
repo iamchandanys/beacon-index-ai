@@ -72,7 +72,7 @@ class DocChatRepository:
         
         return file_url
     
-    async def sync_documents(self, client_id: str, product_id: str):
+    async def sync_documents(self, client_id: str, product_id: str) -> None:
         # Validate input
         if not client_id or not product_id:
             self.log.error("Client ID or Product ID is not provided")
@@ -111,42 +111,54 @@ class DocChatRepository:
         # Create or update document record
         if len(documents) == 0:
             self.log.info("Creating new document record", client_id=client_id, product_id=product_id)
+            
             documents_view_model = DocumentsViewModel(
                 client_id=client_id,
                 product_id=product_id,
                 chunked_documents=chunked_docs
             )
+            
             await self.cosmos_service.create_item_async("documents", documents_view_model.model_dump())
+            
             self.log.info("Document record created successfully", client_id=client_id, product_id=product_id)
         else:
             self.log.info("Updating existing document record", client_id=client_id, product_id=product_id)
+            
             document = documents[0]
             document["chunked_documents"] = [doc.model_dump() for doc in chunked_docs]
+            
             await self.cosmos_service.update_item_async("documents", document)
+            
             self.log.info("Document record updated successfully", client_id=client_id, product_id=product_id)
 
     async def vectorize_document(self, client_id: str, product_id: str) -> None:
-        # Throw error if client_id or product_id is not provided
+        # Validate input
         if not client_id or not product_id:
             self.log.error("Client ID or Product ID is not provided")
             raise ValueError("Client ID and Product ID must be provided.")
         
-        file_urls = self.blob_service.list_files_in_folder("document-chat", f"{client_id}/{product_id}/")
+        # Query documents from Cosmos DB
+        documents: list[DocumentsViewModel] = list(
+            await self.cosmos_service.query_items_async(
+                "documents",
+                "SELECT * FROM c WHERE c.client_id = @client_id AND c.product_id = @product_id",
+                [
+                    {"name": "@client_id", "value": client_id},
+                    {"name": "@product_id", "value": product_id}
+                ]
+            )
+        )
         
-        text_chunks: list[Document] = []
+        if len(documents) > 1:
+            self.log.error("Multiple document records found which should not happen.", client_id=client_id, product_id=product_id)
+            raise ValueError("Multiple document records found which should not happen.")
         
-        for file_url in file_urls:
-            chunk_pdf = ChunkPDF(self.azOpenAIllm)
-            pdf_chunks = chunk_pdf.chunk_pdf(file_url)
-            text_chunks.extend(pdf_chunks)
-            
-        if len(text_chunks) <= 0:
-            self.log.error("No text chunks found for document vectorization")
-            raise ValueError("No text chunks found for document vectorization")
-
+        self.log.info("Vectorizing documents", client_id=client_id, product_id=product_id)
+        
         faiss_service = FaissService()
-
-        faiss_service.create_vector_store(client_id, product_id, text_chunks)
+        faiss_service.create_vector_store(client_id, product_id, documents=documents[0]["chunked_documents"])
+        
+        self.log.info("Vector store created successfully", client_id=client_id, product_id=product_id)
 
     def init_chat(self, client_id: str, product_id: str) -> DocChatModel:
         self.log.info("Initializing new chat", client_id=client_id, product_id=product_id)
