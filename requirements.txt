@@ -19,9 +19,11 @@ python-multipart==0.0.20
 azure-storage-blob==12.26.0
 opencensus-ext-azure==1.1.15
 azure-cosmos==4.9.0
-torch==2.8.0+cu126
-torchvision==0.23.0+cu126
-torchaudio==2.8.0+cu126
+
+# The following versions are intended for local use with CUDA 12.6 only
+# torch==2.8.0+cu126
+# torchvision==0.23.0+cu126
+# torchaudio==2.8.0+cu126
 
 -e . # <- lets you edit your code and see changes instantly when running or importing your package.
 
