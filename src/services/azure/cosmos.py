@@ -9,7 +9,7 @@ class CosmosService:
         self.db = self.client.get_database_client(self.settings.AZ_EMC_COSMOS_DB_SITES_DATABASE_NAME)
         # self.container = self.db.get_container_client(container)
 
-    async def create_item_async(self, container_name, item):
+    async def create_item_async(self, container_name, item: dict):
         try:
             response = await run_in_threadpool(
                 self.db.get_container_client(container_name).create_item,
@@ -20,7 +20,7 @@ class CosmosService:
         except exceptions.CosmosHttpResponseError as e:
             raise RuntimeError(f"An error occurred while adding documents: {e}")
 
-    async def query_items_async(self, container_name, query, parameters):
+    async def query_items_async(self, container_name, query: str, parameters: list[dict]):
         try:
             response = await run_in_threadpool(
                 self.db.get_container_client(container_name).query_items,
@@ -32,7 +32,7 @@ class CosmosService:
         except exceptions.CosmosHttpResponseError as e:
             raise RuntimeError(f"An error occurred while querying documents: {e}")
         
-    async def update_item_async(self, container_name, item):
+    async def update_item_async(self, container_name, item: dict):
         try:
             response = await run_in_threadpool(
                 self.db.get_container_client(container_name).upsert_item,

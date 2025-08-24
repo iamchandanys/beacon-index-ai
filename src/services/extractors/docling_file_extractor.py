@@ -6,6 +6,7 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import (PdfPipelineOptions, PictureDescriptionApiOptions)
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling_core.types.doc import ImageRefMode
+from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from langchain.schema import Document
 from src.core.app_settings import get_settings
 
@@ -32,6 +33,9 @@ class DoclingFileExtractor:
         return picture_desc_api_option
     
     def __get_pdf_pipeline_options(self) -> PdfPipelineOptions:
+        # Set device to CUDA for GPU usage
+        accelerator_options = AcceleratorOptions(num_threads=8, device=AcceleratorDevice.CUDA)
+        
         pipeline_options = PdfPipelineOptions()
         pipeline_options.do_ocr = False
         pipeline_options.do_table_structure = True
@@ -40,6 +44,7 @@ class DoclingFileExtractor:
         pipeline_options.do_picture_description = True
         pipeline_options.picture_description_options = self.__get_pic_desc_api_opts()
         pipeline_options.enable_remote_services = True
+        pipeline_options.accelerator_options = accelerator_options
         
         return pipeline_options
     

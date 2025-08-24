@@ -21,7 +21,10 @@ packages = [
     "python-multipart",
     "azure-storage-blob",
     "opencensus-ext-azure",
-    "azure-cosmos"
+    "azure-cosmos",
+    "torch",
+    "torchvision",
+    "torchaudio"
 ]
 
 for pkg in packages:

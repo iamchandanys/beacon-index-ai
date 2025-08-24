@@ -1,5 +1,5 @@
-pydantic==2.11.7 # For data validation and settings management
-pydantic_settings==2.10.1 # For settings management
+pydantic==2.11.7
+pydantic_settings==2.10.1
 setuptools==80.9.0
 python-dotenv==1.1.1
 ipykernel==6.30.1
@@ -11,13 +11,19 @@ langchain_openai==0.3.28
 pypdf==5.9.0
 faiss-cpu==1.11.0.post1
 structlog==25.4.0
-pdfplumber==0.11.7 # For PDF processing
-PyMuPDF==1.26.3 # For PDF processing (Not using anymore)
-FastAPI==0.116.1 # For building APIs
-uvicorn==0.35.0 # For running the FastAPI server
-python-multipart==0.0.20 # For handling file uploads
-azure-storage-blob==12.26.0 # For Azure Blob Storage operations
-opencensus-ext-azure==1.1.15 # For Azure monitoring
-azure-cosmos==4.9.0 # For Azure Cosmos DB operations
+pdfplumber==0.11.7
+PyMuPDF==1.26.3
+FastAPI==0.116.1
+uvicorn==0.35.0
+python-multipart==0.0.20
+azure-storage-blob==12.26.0
+opencensus-ext-azure==1.1.15
+azure-cosmos==4.9.0
+torch==2.8.0+cu126
+torchvision==0.23.0+cu126
+torchaudio==2.8.0+cu126
 
 -e . # <- lets you edit your code and see changes instantly when running or importing your package.
+
+# Run the below command to install the Torch CUDA dependencies from PyTorch and other dependencies from PyPI
+# pip install -r requirements.txt --index-url https://download.pytorch.org/whl/cu126 --extra-index-url https://pypi.org/simple
