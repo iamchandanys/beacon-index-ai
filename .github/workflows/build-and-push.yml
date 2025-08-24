@@ -31,7 +31,7 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
 
       - name: Log in to ACR using Azure session
-        run: az acr login --name "$ACR_NAME"
+        run: az acr login --name "${{ vars.ACR_NAME }}"
 
       - name: Set image tags
         id: tags
