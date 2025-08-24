@@ -12,7 +12,7 @@ class Message(BaseModel):
     role: str = Field(description="Role of the message sender, e.g., 'user', 'assistant'")
     content: List[MessageContent] = Field(description="List of message content objects for this message")
 
-class DocChatModel(TypedDict):
+class ChatHistoryViewModel(TypedDict):
     id: str
     client_id: str
     product_id: str

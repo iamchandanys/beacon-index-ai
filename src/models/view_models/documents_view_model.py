@@ -4,10 +4,10 @@ from datetime import datetime, timezone
 from pydantic import BaseModel, Field
 
 class CustomDocument(BaseModel):
-    id: str | None = None
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     metadata: dict = Field(default_factory=dict)
     page_content: str
-    type: str = "Document"
+    type: str = "text"
 
 class DocumentsViewModel(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))

@@ -9,6 +9,7 @@ from docling_core.types.doc import ImageRefMode
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from langchain.schema import Document
 from src.core.app_settings import get_settings
+from src.models.view_models.documents_view_model import CustomDocument
 
 class DoclingFileExtractor:
     def __init__(self):
@@ -123,8 +124,8 @@ class DoclingFileExtractor:
         self.log.info("All Document objects created successfully.", document_count=len(documents))
         
         return documents
-    
-    def chunk_file(self, file_url: str) -> list[Document]:
+
+    def chunk_file(self, file_url: str) -> list[CustomDocument]:
         """
         Splits a file into chunks and returns a list of Document objects.
         Args:
@@ -134,9 +135,9 @@ class DoclingFileExtractor:
         """
         mark_down = self.__get_file_markdown(file_url=file_url)
         documents = self.__get_file_documents(mark_down=mark_down)
-        
-        return documents
-    
+
+        return [CustomDocument(page_content=doc.page_content, metadata=doc.metadata) for doc in documents]
+
 if __name__ == "__main__":
     file_extractor = DoclingFileExtractor()
     file_extractor.chunk_file("https://emcdevstoragev2.blob.core.windows.net/public/efba9f0b-70cc-4dab-b6b7-5812a22c0c37.pdf")

@@ -2,7 +2,7 @@ import os
 import asyncio
 
 from azure.cosmos import CosmosClient, exceptions
-from src.models.doc_chat_model import DocChatModel
+from src.models.view_models.chat_history_view_model import DocChatModel
 from src.models.view_models.documents_view_model import DocumentsViewModel 
 from src.core.app_settings import get_settings
 from starlette.concurrency import run_in_threadpool

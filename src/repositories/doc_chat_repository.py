@@ -12,9 +12,9 @@ from src.services.llm.providers import LLMService
 from src.services.vectorstores.faiss_store import FaissService
 # from src.services.azure.xcosmos import CosmosService
 from src.services.azure.cosmos import CosmosService
-from src.models.doc_chat_model import DocChatModel
+from src.models.view_models.chat_history_view_model import DocChatModel
 from src.models.requests import ChatRequest
-from src.models.view_models.documents_view_model import DocumentsViewModel
+from src.models.view_models.documents_view_model import DocumentsViewModel, CustomDocument
 from src.services.extractors.pdf_chunker import ChunkPDF
 from src.services.extractors.docling_file_extractor import DoclingFileExtractor
 from src.services.prompts.prompting import contextualize_question_prompt, context_qa_prompt
@@ -102,11 +102,11 @@ class DocChatRepository:
             raise ValueError("Multiple document records found which should not happen.")
 
         docling_file_extractor = DoclingFileExtractor()
-        chunked_docs: list[Document] = []
+        custom_documents: list[CustomDocument] = []
 
         # Chunk files
         for url in file_urls:
-            chunked_docs.extend(docling_file_extractor.chunk_file(url)) # Todo: Make chunk_file async
+            custom_documents.extend(docling_file_extractor.chunk_file(url)) # Todo: Make chunk_file async
 
         # Create or update document record
         if len(documents) == 0:
@@ -115,7 +115,7 @@ class DocChatRepository:
             documents_view_model = DocumentsViewModel(
                 client_id=client_id,
                 product_id=product_id,
-                chunked_documents=chunked_docs
+                chunked_documents=custom_documents
             )
             
             await self.cosmos_service.create_item_async("documents", documents_view_model.model_dump())
@@ -125,8 +125,8 @@ class DocChatRepository:
             self.log.info("Updating existing document record", client_id=client_id, product_id=product_id)
             
             document = documents[0]
-            document["chunked_documents"] = [doc.model_dump() for doc in chunked_docs]
-            
+            document["chunked_documents"] = [doc.model_dump() for doc in custom_documents]
+
             await self.cosmos_service.update_item_async("documents", document)
             
             self.log.info("Document record updated successfully", client_id=client_id, product_id=product_id)
@@ -154,10 +154,13 @@ class DocChatRepository:
             raise ValueError("Multiple document records found which should not happen.")
         
         self.log.info("Vectorizing documents", client_id=client_id, product_id=product_id)
-        
+
         faiss_service = FaissService()
-        faiss_service.create_vector_store(client_id, product_id, documents=documents[0]["chunked_documents"])
-        
+        faiss_service.create_vector_store(
+            client_id, product_id, 
+            documents=[Document(page_content=doc["page_content"], metadata=doc["metadata"]) for doc in documents[0]["chunked_documents"]]
+        )
+
         self.log.info("Vector store created successfully", client_id=client_id, product_id=product_id)
 
     def init_chat(self, client_id: str, product_id: str) -> DocChatModel:
