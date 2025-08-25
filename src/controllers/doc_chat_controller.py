@@ -88,27 +88,12 @@ class DocChatController:
             error_msg = CustomException(str(e), sys).__str__()
             self.log.error("Vectorize document failed", error_msg=error_msg)
             raise HTTPException(status_code=500, detail=f"Unexpected error during document vectorization.")
-
-    def init_chat(self, client_id: str, product_id: str):
-        try:
-            self.log.info("Initializing chat", client_id=client_id, product_id=product_id)
-
-            chat_details = self.repository.init_chat(client_id=client_id, product_id=product_id)
-
-            self.log.info("Chat initialized successfully")
-
-            return chat_details
-
-        except Exception as e:
-            error_msg = CustomException(str(e), sys).__str__()
-            self.log.error("Init chat failed", error_msg=error_msg)
-            raise HTTPException(status_code=500, detail=f"Unexpected error during chat initialization.")
         
-    def chat(self, chat_request: ChatRequest):
+    async def chat(self, chat_request: ChatRequest):
         try:
             self.log.info("Chat request received", chat_request=chat_request)
 
-            response = self.repository.chat(chat_request)
+            response = await self.repository.chat(chat_request)
 
             self.log.info("Chat response generated successfully", response=response)
 
@@ -144,11 +129,6 @@ endpoints = [
         "path": "/vectorize",
         "method": "post",
         "handler": doc_chat_controller.vectorize_document
-    },
-    {
-        "path": "/init_chat",
-        "method": "post",
-        "handler": doc_chat_controller.init_chat
     },
     {
         "path": "/chat",

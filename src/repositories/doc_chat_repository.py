@@ -3,18 +3,16 @@ import structlog
 
 from fastapi import UploadFile, File
 from langchain.schema import Document
-from datetime import datetime, timezone
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnableLambda
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from src.services.azure.blob import BlobService
 from src.services.llm.providers import LLMService
 from src.services.vectorstores.faiss_store import FaissService
-# from src.services.azure.xcosmos import CosmosService
 from src.services.azure.cosmos import CosmosService
-from src.models.view_models.chat_history_view_model import DocChatModel
 from src.models.requests import ChatRequest
 from src.models.view_models.documents_view_model import DocumentsViewModel, CustomDocument
+from src.models.view_models.chat_history_view_model import ChatHistoryViewModel
 from src.services.extractors.pdf_chunker import ChunkPDF
 from src.services.extractors.docling_file_extractor import DoclingFileExtractor
 from src.services.prompts.prompting import contextualize_question_prompt, context_qa_prompt
@@ -163,22 +161,16 @@ class DocChatRepository:
 
         self.log.info("Vector store created successfully", client_id=client_id, product_id=product_id)
 
-    def init_chat(self, client_id: str, product_id: str) -> DocChatModel:
+    async def _init_chat(self, client_id: str, product_id: str) -> ChatHistoryViewModel:
         self.log.info("Initializing new chat", client_id=client_id, product_id=product_id)
 
-        now_str = datetime.now(timezone.utc).isoformat()
-        
-        doc_chat_model = DocChatModel()
-        doc_chat_model["id"] = str(uuid.uuid4())
-        doc_chat_model["client_id"] = client_id
-        doc_chat_model["product_id"] = product_id
-        doc_chat_model["messages"] = []
-        doc_chat_model["createdAt"] = now_str
-        doc_chat_model["updatedAt"] = now_str
-        
-        chat_details = self.cosmos_service.init_chat(doc_chat_model)
+        doc_chat_model = ChatHistoryViewModel(client_id=client_id, product_id=product_id)
 
-        self.log.info("Chat initialized successfully", chat_id=doc_chat_model["id"])
+        chat_details_dict = await self.cosmos_service.create_item_async("chat-history", doc_chat_model.model_dump())
+
+        chat_details = ChatHistoryViewModel(**chat_details_dict)
+
+        self.log.info("Chat initialized successfully", chat_id=doc_chat_model.id)
 
         return chat_details
 
@@ -186,30 +178,58 @@ class DocChatRepository:
     def _format_docs(docs: list[Document]) -> str:
         return "\n\n".join([doc.page_content for doc in docs])
 
-    def _get_chat_history(self, chat_id: str) -> list[AIMessage | HumanMessage | SystemMessage]:
+    async def _get_chat_history(self, chat_id: str) -> list[AIMessage | HumanMessage | SystemMessage]:
         self.log.info("Fetching chat details", chat_id=chat_id)
         
         chat_history: list[AIMessage | HumanMessage | SystemMessage] = []
 
-        chat_details = self.cosmos_service.get_chat(chat_id)
+        result = list(
+            await self.cosmos_service.query_items_async(
+                "chat-history",
+                "SELECT * FROM c WHERE c.id = @chat_id",
+                [
+                    {"name": "@chat_id", "value": chat_id}
+                ]
+            )
+        )
 
-        for message in chat_details["messages"]:
-            for content in message["content"]:
-                if message["role"] == "system":
-                    chat_history.append(SystemMessage(content["text"]))
-                elif message["role"] == "user":
-                    chat_history.append(HumanMessage(content["text"]))
-                elif message["role"] == "assistant":
-                    chat_history.append(AIMessage(content["text"]))
+        if len(result) == 0:
+            self.log.error("No chat history found for the given chat_id", chat_id=chat_id)
+            return chat_history
+
+        chat_details: ChatHistoryViewModel = ChatHistoryViewModel(**result[0])
+
+        for message in chat_details.messages:
+            for content in message.content:
+                if message.role == "system":
+                    chat_history.append(SystemMessage(content.text))
+                elif message.role == "user":
+                    chat_history.append(HumanMessage(content.text))
+                elif message.role == "assistant":
+                    chat_history.append(AIMessage(content.text))
 
         self.log.info("Chat history fetched successfully", chat_id=chat_id, history_length=len(chat_history))
         
         return chat_history
     
-    def _update_chat_history(self, chat_id: str, user_message: str, assistant_message: str) -> None:
+    async def _update_chat_history(self, chat_id: str, user_message: str, assistant_message: str) -> None:
         self.log.info("Updating chat history", chat_id=chat_id)
 
-        chat_details = self.cosmos_service.get_chat(chat_id)
+        results = list(
+            await self.cosmos_service.query_items_async(
+                "chat-history",
+                "SELECT * FROM c WHERE c.id = @chat_id",
+                [
+                    {"name": "@chat_id", "value": chat_id}
+                ]
+            )
+        )
+        
+        if not results:
+            self.log.error("No chat history found for the given chat_id", chat_id=chat_id)
+            raise ValueError(f"No chat history found for the given chat_id: {chat_id}")
+
+        chat_details = ChatHistoryViewModel(**results[0])
 
         # Append user message
         chat_details["messages"].append({
@@ -223,11 +243,16 @@ class DocChatRepository:
             "content": [{"text": assistant_message, "type": "text", "tokensUsed": 0}]
         })
 
-        self.cosmos_service.update_chat(chat_details)
-        
+        await self.cosmos_service.update_item_async("chat-history", chat_details)
+
         self.log.info("Chat history updated successfully", chat_id=chat_id, messages_count=len(chat_details["messages"]))
     
-    def chat(self, chat_request: ChatRequest) -> str:
+    async def chat(self, chat_request: ChatRequest) -> str:
+        # If chat_id is not present, initialize a new chat
+        if not chat_request.get("chat_id"):
+            chat_details = await self._init_chat(chat_request["client_id"], chat_request["product_id"])
+            chat_request["chat_id"] = chat_details.id
+        
         self.log.info("Loading vector store", client_id=chat_request["client_id"], product_id=chat_request["product_id"])
 
         # Load the vector store
@@ -249,6 +274,10 @@ class DocChatRepository:
 
         # Retrieve docs for rewritten question
         retrieve_docs = question_rewriter | retriever | self._format_docs
+        
+        def log_prompt(prompt):
+            print("Prompt to LLM:", prompt)
+            return prompt
 
         # Answer using retrieved docs + original input + chat history
         chain = (
@@ -257,22 +286,26 @@ class DocChatRepository:
                 "input": RunnableLambda(lambda x: x["question"]),
                 "chat_history": RunnableLambda(lambda x: x["chat_history"]),
             }
-            | context_qa_prompt | self.azOpenAIllm | StrOutputParser()
+            | context_qa_prompt | RunnableLambda(log_prompt) | self.azOpenAIllm | StrOutputParser()
         )
+        
+        self.log.info("context_qa_prompt value: %s", context_qa_prompt)
 
         self.log.info("Invoking chain for response generation")
 
+
+        
         # Invoke the chain
         result = chain.invoke(
             {
                 "question": chat_request["query"],
-                "chat_history": self._get_chat_history(chat_request["chat_id"]),
+                "chat_history": await self._get_chat_history(chat_request["chat_id"]),
             }
         )
 
         self.log.info("Updating chat details with new messages")
 
         # Update the chat history
-        self._update_chat_history(chat_request["chat_id"], chat_request["query"], result)
+        await self._update_chat_history(chat_request["chat_id"], chat_request["query"], result)
 
         return result
