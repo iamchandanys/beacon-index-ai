@@ -1,5 +1,6 @@
 import uuid
 import structlog
+import os
 
 from fastapi import UploadFile, File
 from langchain.schema import Document
@@ -13,9 +14,10 @@ from src.services.azure.cosmos import CosmosService
 from src.models.requests import ChatRequest
 from src.models.view_models.documents_view_model import DocumentsViewModel, CustomDocument
 from src.models.view_models.chat_history_view_model import ChatHistoryViewModel
-from src.services.extractors.pdf_chunker import ChunkPDF
 from src.services.extractors.docling_file_extractor import DoclingFileExtractor
 from src.services.prompts.prompting import contextualize_question_prompt, context_qa_prompt
+
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 class DocChatRepository:
     def __init__(self):
@@ -232,20 +234,41 @@ class DocChatRepository:
         chat_details = ChatHistoryViewModel(**results[0])
 
         # Append user message
-        chat_details["messages"].append({
+        chat_details.messages.append({
             "role": "user",
             "content": [{"text": user_message, "type": "text", "tokensUsed": 0}]
         })
 
         # Append assistant message
-        chat_details["messages"].append({
+        chat_details.messages.append({
             "role": "assistant",
             "content": [{"text": assistant_message, "type": "text", "tokensUsed": 0}]
         })
 
-        await self.cosmos_service.update_item_async("chat-history", chat_details)
+        await self.cosmos_service.update_item_async("chat-history", chat_details.model_dump())
 
-        self.log.info("Chat history updated successfully", chat_id=chat_id, messages_count=len(chat_details["messages"]))
+        self.log.info("Chat history updated successfully", chat_id=chat_id, messages_count=len(chat_details.messages))
+    
+    # Todo: Log to file only in local
+    def _log_prompt(self, prompt, prompt_type: str = "text"):
+        save_path = os.getcwd()
+        vector_store_dir = os.path.join(save_path, "prompt_logging")
+        os.makedirs(vector_store_dir, exist_ok=True)
+        
+        # Create a unique filename for each log
+        log_filename = f"prompt_log_{prompt_type}_{uuid.uuid4().hex}.txt"
+        log_filepath = os.path.join(vector_store_dir, log_filename)
+        
+        with open(log_filepath, "w", encoding="utf-8") as f:
+            if hasattr(prompt, "messages"):
+                for msg in prompt.messages:
+                    f.write(f"{type(msg).__name__}: {msg.content}\n")
+                    f.write("----------------------------\n")
+            else:
+                f.write(str(prompt) + "\n")
+                f.write("----------------------------\n")
+
+        return prompt
     
     async def chat(self, chat_request: ChatRequest) -> str:
         # If chat_id is not present, initialize a new chat
@@ -269,15 +292,19 @@ class DocChatRepository:
                 "input": RunnableLambda(lambda x: x["question"]), 
                 "chat_history": RunnableLambda(lambda x: x["chat_history"])
             }
-            | contextualize_question_prompt | self.azOpenAIllm | StrOutputParser()
+            | contextualize_question_prompt 
+            | RunnableLambda(lambda prompt: self._log_prompt(prompt, prompt_type="contextualize_question_prompt"))
+            | self.azOpenAIllm 
+            | StrOutputParser()
         )
 
         # Retrieve docs for rewritten question
-        retrieve_docs = question_rewriter | retriever | self._format_docs
-        
-        def log_prompt(prompt):
-            print("Prompt to LLM:", prompt)
-            return prompt
+        retrieve_docs = (
+            question_rewriter
+            | RunnableLambda(lambda prompt: self._log_prompt(prompt, prompt_type="rewritten_question"))
+            | retriever
+            | self._format_docs
+        )
 
         # Answer using retrieved docs + original input + chat history
         chain = (
@@ -286,15 +313,14 @@ class DocChatRepository:
                 "input": RunnableLambda(lambda x: x["question"]),
                 "chat_history": RunnableLambda(lambda x: x["chat_history"]),
             }
-            | context_qa_prompt | RunnableLambda(log_prompt) | self.azOpenAIllm | StrOutputParser()
+            | context_qa_prompt
+            | RunnableLambda(lambda prompt: self._log_prompt(prompt, prompt_type="context_qa_prompt"))
+            | self.azOpenAIllm
+            | StrOutputParser()
         )
         
-        self.log.info("context_qa_prompt value: %s", context_qa_prompt)
-
         self.log.info("Invoking chain for response generation")
 
-
-        
         # Invoke the chain
         result = chain.invoke(
             {
