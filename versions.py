@@ -2,15 +2,15 @@ import importlib.metadata
 
 packages = [
     "pydantic",
-    "pydantic_settings",
+    "pydantic-settings",
     "setuptools",
     "python-dotenv",
     "ipykernel",
     "langchain",
-    "langchain_community",
-    "langchain_groq",
-    "langchain_google_genai",
-    "langchain_openai",
+    "langchain-community",
+    "langchain-groq",
+    "langchain-google-genai",
+    "langchain-openai",
     "pypdf",
     "faiss-cpu",
     "structlog",
@@ -24,7 +24,9 @@ packages = [
     "azure-cosmos",
     "torch",
     "torchvision",
-    "torchaudio"
+    "torchaudio",
+    "azure-identity",
+    "azure-keyvault-secrets"
 ]
 
 for pkg in packages:
