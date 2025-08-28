@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from src.controllers.doc_analyser_controller import router as doc_analyser_router
 from src.controllers.doc_chat_controller import router as doc_chat_router
+from src.core.app_settings import get_settings, refresh_settings
 from src.utils.az_logger import az_logging
 from contextlib import asynccontextmanager
 
@@ -13,13 +14,15 @@ az_logging()
 logger = structlog.get_logger("app")
 
 # Lifespan handler lets you run code when the app starts and stops, useful for setup/cleanup.
+# This feature requires FastAPI version 0.95 or higher.
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # startup logic
-    logger.info("app.startup")  # Log when the app starts
+    _ = get_settings()  # Ensure settings are loaded at startup
+    logger.info("App setting configurations loaded and application startup complete")
     yield
     # shutdown logic
-    logger.info("app.shutdown")  # Log when the app shuts down
+    logger.info("Application shutdown initiated")
 
 # This creates the FastAPI app and sets metadata and docs URLs, also attaches the lifespan handler.
 app = FastAPI(
@@ -69,3 +72,9 @@ for router, prefix, tags in routers:
 async def root():
     logger.info("root.called")
     return {"message": "Welcome to the Document Portal API"}
+
+# Admin endpoint to refresh app settings configurations
+@app.post("/admin/refresh-config")
+def admin_refresh():
+    _ = refresh_settings()
+    return {"status": "ok"}
