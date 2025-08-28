@@ -3,15 +3,15 @@ import uuid
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-# from src.controllers.doc_analyser_controller import router as doc_analyser_router
-# from src.controllers.doc_chat_controller import router as doc_chat_router
+from src.controllers.doc_analyser_controller import router as doc_analyser_router
+from src.controllers.doc_chat_controller import router as doc_chat_router
 from src.core.app_settings import get_settings, refresh_settings
-# from src.utils.az_logger import az_logging
+from src.utils.az_logger import az_logging
 from contextlib import asynccontextmanager
 
 # This sets up Azure logging as early as possible so all logs are captured from the start.
-# az_logging()
-# logger = structlog.get_logger("app")
+az_logging()
+logger = structlog.get_logger("app")
 
 # Lifespan handler lets you run code when the app starts and stops, useful for setup/cleanup.
 # This feature requires FastAPI version 0.95 or higher.
@@ -19,10 +19,10 @@ from contextlib import asynccontextmanager
 async def lifespan(app: FastAPI):
     # startup logic
     _ = get_settings()  # Ensure settings are loaded at startup
-    # logger.info("App setting configurations loaded and application startup complete")
+    logger.info("App setting configurations loaded and application startup complete")
     yield
     # shutdown logic
-    # logger.info("Application shutdown initiated")
+    logger.info("Application shutdown initiated")
 
 # This creates the FastAPI app and sets metadata and docs URLs, also attaches the lifespan handler.
 app = FastAPI(
@@ -57,15 +57,15 @@ async def add_request_context(request: Request, call_next):
         structlog.contextvars.clear_contextvars()  # Clean up context after request
 
 # Include the routers with appropriate prefixes and tags.
-# routers = [
-#     (doc_analyser_router, "/doc-analyser", ["Document Analysis"]),
-#     (doc_chat_router, "/doc-chat", ["Document Chat"]),
-# ]
+routers = [
+    (doc_analyser_router, "/doc-analyser", ["Document Analysis"]),
+    (doc_chat_router, "/doc-chat", ["Document Chat"]),
+]
 
 # Loop through each router and register it with the app.
 # Each router has a prefix and tags for better organization in the API docs.
-# for router, prefix, tags in routers:
-#     app.include_router(router, prefix=prefix, tags=tags)
+for router, prefix, tags in routers:
+    app.include_router(router, prefix=prefix, tags=tags)
 
 # Defines the root ("/") endpoint, returns a welcome message and logs the call.
 @app.get("/")
