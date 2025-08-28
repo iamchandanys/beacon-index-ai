@@ -2,7 +2,7 @@ name: Build & Push to ACR
 
 on:
   push:
-    branches: ["dev", "main"] # keep or edit as you like
+    branches: ["dev", "main", "acr-deploy-fix"] # keep or edit as you like
     tags: ["v*"] # build on version tags too (e.g., v1.2.3)
   workflow_dispatch:
 
