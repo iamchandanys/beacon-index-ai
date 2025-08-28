@@ -21,6 +21,7 @@ opencensus-ext-azure==1.1.15
 azure-cosmos==4.9.0
 azure-identity==1.24.0
 azure-keyvault-secrets==4.10.0
+docling==2.46.0
 
 # The following versions are intended for local use with CUDA 12.6 only
 # torch==2.8.0+cu126

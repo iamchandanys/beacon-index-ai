@@ -26,7 +26,8 @@ packages = [
     "torchvision",
     "torchaudio",
     "azure-identity",
-    "azure-keyvault-secrets"
+    "azure-keyvault-secrets",
+    "docling"
 ]
 
 for pkg in packages:
