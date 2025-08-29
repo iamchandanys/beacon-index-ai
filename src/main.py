@@ -18,8 +18,7 @@ logger = structlog.get_logger("app")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # startup logic
-    aa = get_settings()  # Ensure settings are loaded at startup
-    print("App settings loaded:", aa.__dict__)  # For debugging purposes
+    _ = get_settings()  # Ensure settings are loaded at startup
     logger.info("App setting configurations loaded and application startup complete")
     yield
     # shutdown logic
@@ -71,7 +70,7 @@ for router, prefix, tags in routers:
 # Defines the root ("/") endpoint, returns a welcome message and logs the call.
 @app.get("/")
 async def root():
-    # logger.info("root.called")
+    logger.info("root.called")
     return {"message": "Welcome to the Document Portal API"}
 
 # Admin endpoint to refresh app settings configurations

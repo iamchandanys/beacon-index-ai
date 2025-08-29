@@ -251,26 +251,26 @@ class DocChatRepository:
     
     # Todo: Log to file only in local
     def _log_prompt(self, prompt, prompt_type: str = "text"):
-        save_path = os.getcwd()
-        vector_store_dir = os.path.join(save_path, "prompt_logging")
-        os.makedirs(vector_store_dir, exist_ok=True)
+        # save_path = os.getcwd()
+        # vector_store_dir = os.path.join(save_path, "prompt_logging")
+        # os.makedirs(vector_store_dir, exist_ok=True)
         
-        # Create a unique filename for each log
-        log_filename = f"prompt_log_{prompt_type}_{uuid.uuid4().hex}.txt"
-        log_filepath = os.path.join(vector_store_dir, log_filename)
+        # # Create a unique filename for each log
+        # log_filename = f"prompt_log_{prompt_type}_{uuid.uuid4().hex}.txt"
+        # log_filepath = os.path.join(vector_store_dir, log_filename)
         
-        with open(log_filepath, "w", encoding="utf-8") as f:
-            if hasattr(prompt, "messages"):
-                for msg in prompt.messages:
-                    f.write(f"{type(msg).__name__}: {msg.content}\n")
-                    f.write("----------------------------\n")
-            else:
-                f.write(str(prompt) + "\n")
-                f.write("----------------------------\n")
+        # with open(log_filepath, "w", encoding="utf-8") as f:
+        #     if hasattr(prompt, "messages"):
+        #         for msg in prompt.messages:
+        #             f.write(f"{type(msg).__name__}: {msg.content}\n")
+        #             f.write("----------------------------\n")
+        #     else:
+        #         f.write(str(prompt) + "\n")
+        #         f.write("----------------------------\n")
 
         return prompt
     
-    async def chat(self, chat_request: ChatRequest) -> str:
+    async def chat(self, chat_request: ChatRequest) -> dict:
         # If chat_id is not present, initialize a new chat
         if not chat_request.get("chat_id"):
             chat_details = await self._init_chat(chat_request["client_id"], chat_request["product_id"])
@@ -334,4 +334,7 @@ class DocChatRepository:
         # Update the chat history
         await self._update_chat_history(chat_request["chat_id"], chat_request["query"], result)
 
-        return result
+        return {
+            "response": result,
+            "chatId": chat_request["chat_id"]
+        }

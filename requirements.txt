@@ -21,14 +21,5 @@ opencensus-ext-azure==1.1.15
 azure-cosmos==4.9.0
 azure-identity==1.24.0
 azure-keyvault-secrets==4.10.0
-docling==2.46.0
-
-# The following versions are intended for local use with CUDA 12.6 only
-# torch==2.8.0+cu126
-# torchvision==0.23.0+cu126
-# torchaudio==2.8.0+cu126
 
 -e . # <- lets you edit your code and see changes instantly when running or importing your package.
-
-# Run the below command to install the Torch CUDA dependencies from PyTorch and other dependencies from PyPI
-# pip install -r requirements.txt --index-url https://download.pytorch.org/whl/cu126 --extra-index-url https://pypi.org/simple
