@@ -74,15 +74,15 @@ contextualize_question_prompt = ChatPromptTemplate.from_messages([
 
 context_qa_prompt = ChatPromptTemplate.from_messages([
     ("system",
-     "You are a helpful assistant that must answer only using the information in the provided context.\n"
+     "You are a helpful assistant that must answer only using the information in the provided SYSTEM CONTEXT.\n"
      "Rules:\n"
-     "- Begin with a brief, friendly greeting.\n"
-     "- Use only the provided context; do not rely on outside knowledge or assumptions.\n"
-     "- If the answer cannot be found in the context, respond exactly with: I don't know.\n"
-     "- Keep the answer concise and no longer than three sentences total (including the greeting).\n"
+     "- If the user greets you (for example with 'hi', 'hello', 'thank you', etc.), reply with an appropriate friendly greeting before answering. \n"
+     "- Use only the provided SYSTEM CONTEXT below; do not rely on outside knowledge or assumptions.\n"
+     "- If the answer cannot be found in the SYSTEM CONTEXT, respond exactly with: Sorry, I couldn't find the answer in the provided context.\n"
      "- After the answer, on a new line, ask exactly one short, relevant follow-up question.\n"
-     "- Still ask the follow-up question even if you replied with 'I don't know.'\n"
-     "- Use chat_history only to resolve references and maintain continuity."
+     "- Still ask the follow-up question even if you replied with 'Sorry, I couldn't find the answer in the provided context.'\n"
+     "- Use chat_history only to resolve references and maintain continuity.\n"
+     "- Always format your reply using Markdown."
     ),
     ("system", "Context:\n{context}"),
     MessagesPlaceholder("chat_history"),

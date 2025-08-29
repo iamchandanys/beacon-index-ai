@@ -13,4 +13,5 @@ notebook/
 faiss_vector_store/
 beacon_index_ai.egg-info/
 .github/
-prompt_logging
+prompt_logging/
+.vscode/
