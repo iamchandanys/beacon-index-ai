@@ -2,8 +2,8 @@ import time
 import structlog
 
 from docling.datamodel.base_models import InputFormat
-from docling.datamodel.pipeline_options import (PdfPipelineOptions, PictureDescriptionApiOptions)
-from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.datamodel.pipeline_options import PdfPipelineOptions, PictureDescriptionApiOptions, PipelineOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption, WordFormatOption
 from docling_core.types.doc import ImageRefMode
 from docling.datamodel.accelerator_options import AcceleratorDevice, AcceleratorOptions
 from langchain.schema import Document
@@ -66,8 +66,17 @@ class DoclingFileExtractor:
 
         # For now, we will only support PDF files. In the future, we may add support for other formats.
         doc_converter = DocumentConverter(
+            allowed_formats=[
+                InputFormat.PDF,
+                InputFormat.DOCX,
+                InputFormat.MD,
+                InputFormat.XLSX,
+                InputFormat.CSV,
+                InputFormat.ASCIIDOC,
+            ],
             format_options={
-                InputFormat.PDF: PdfFormatOption(pipeline_options=self.__get_pdf_pipeline_options())
+                InputFormat.PDF: PdfFormatOption(pipeline_options=self.__get_pdf_pipeline_options()),
+                InputFormat.DOCX: WordFormatOption(pipeline_options=PipelineOptions()),
             }
         )
         

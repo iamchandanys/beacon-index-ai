@@ -1,6 +1,6 @@
 # NOTE: The following packages should be installed only in local development environments at this time. Avoid including them in production deployments.
 
-docling==2.46.0
+docling==2.48.0
 
 # The following Torch dependencies are for local development only with CUDA 12.6 support.
 # Installing these enables Docling to leverage GPU acceleration for document extraction tasks.
@@ -9,4 +9,4 @@ torchvision==0.23.0+cu126
 torchaudio==2.8.0+cu126
 
 # To enable GPU acceleration for document extraction tasks, run the following command to install Torch CUDA dependencies from the PyTorch index
-# pip install -r requirements-heavy.txt --index-url https://download.pytorch.org/whl/cu126
+# pip install -r requirements-heavy.txt --index-url https://download.pytorch.org/whl/cu126 --extra-index-url https://pypi.org/simple
