@@ -14,9 +14,6 @@ WORKDIR /app
 # then clean up apt cache to keep the image size small
 RUN apt-get update && apt-get install -y build-essential poppler-utils && rm -rf /var/lib/apt/lists/*
 
-# Copy the heavy requirements file first to leverage Docker layer caching for dependencies
-COPY requirements-heavy.txt .
-
 # Copy the main requirements file to the working directory
 COPY requirements.txt .
 
@@ -25,9 +22,6 @@ COPY .env .
 
 # Copy all project files into the container's working directory
 COPY . .
-
-# Install heavy package separately (cached if requirements-heavy.txt doesn't change)
-RUN pip install -r requirements-heavy.txt
 
 # Install Python dependencies from requirements.txt without caching to reduce image size
 RUN pip install --no-cache-dir -r requirements.txt

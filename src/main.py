@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from src.controllers.doc_analyser_controller import router as doc_analyser_router
 from src.controllers.doc_chat_controller import router as doc_chat_router
+# from src.controllers.doc_extractor_controller import router as doc_extractor_router
 from src.core.app_settings import get_settings, refresh_settings
 from src.utils.az_logger import az_logging
 from contextlib import asynccontextmanager
@@ -60,6 +61,7 @@ async def add_request_context(request: Request, call_next):
 routers = [
     (doc_analyser_router, "/doc-analyser", ["Document Analysis"]),
     (doc_chat_router, "/doc-chat", ["Document Chat"]),
+    # (doc_extractor_router, "/doc-extractor", ["Document Extractor"]),
 ]
 
 # Loop through each router and register it with the app.
@@ -74,7 +76,7 @@ async def root():
     return {"message": "Welcome to the Document Portal API"}
 
 # Admin endpoint to refresh app settings configurations
-@app.post("/admin/refresh-config")
+@app.post("/refresh-config")
 def admin_refresh():
     _ = refresh_settings()
     return {"status": "ok"}
