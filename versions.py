@@ -22,12 +22,12 @@ packages = [
     "azure-storage-blob",
     "opencensus-ext-azure",
     "azure-cosmos",
+    "azure-identity",
+    "azure-keyvault-secrets",
+    "docling",
     "torch",
     "torchvision",
     "torchaudio",
-    "azure-identity",
-    "azure-keyvault-secrets",
-    "docling"
 ]
 
 for pkg in packages:
