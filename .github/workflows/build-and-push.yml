@@ -2,7 +2,9 @@ name: Build & Push to ACR
 
 on:
   push:
-    branches: ["dev", "main"] # keep or edit as you like
+    branches: ["dev", "main"]
+  pull_request:
+    branches: ["dev", "main"]
     tags: ["v*"] # build on version tags too (e.g., v1.2.3)
   workflow_dispatch:
 
@@ -12,13 +14,6 @@ permissions:
   id-token: write
 
 # Expect these repo-level items to be set:
-#   Actions → Variables:
-#     - ACR_NAME = emcdevacr-c9f8cyh8hzhzb4d3
-#     - ACR_LOGIN_SERVER = emcdevacr-c9f8cyh8hzhzb4d3.azurecr.io
-#   Actions → Secrets:
-#     - AZURE_TENANT_ID
-#     - AZURE_SUBSCRIPTION_ID
-#     - AZURE_CLIENT_ID
 env:
   IMAGE_NAME: beacon-index-ai
   ACR_NAME: ${{ vars.ACR_NAME }}
@@ -30,7 +25,45 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  test:
+    name: Run unit tests
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # OIDC for azure/login
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+
+      - name: Install deps
+        run: |
+          python -m pip install -U pip
+          pip install -r requirements.txt
+          pip install pytest httpx
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Run tests
+        run: pytest -q
+
   build-and-push:
+    name: Build and push Docker image to ACR
+    needs: test
     runs-on: ubuntu-latest
 
     steps:
