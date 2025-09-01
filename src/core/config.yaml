@@ -9,3 +9,9 @@ chat_llm:
   az_open_ai_embeddings:
     azure_deployment: text-embedding-ada-002
     api_version: "2023-05-15"
+deepeval:
+  model_name: "gpt-4o-mini"
+  deployment_name: "gpt-4o-mini"
+  openai_api_version: "2025-01-01-preview"
+  azure_endpoint: "https://x-chatbot-ai-service.openai.azure.com/"
+  temperature: 0

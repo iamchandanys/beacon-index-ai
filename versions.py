@@ -28,7 +28,8 @@ packages = [
     "torch",
     "torchvision",
     "torchaudio",
-    "pytest"
+    "pytest",
+    "deepeval"
 ]
 
 for pkg in packages:

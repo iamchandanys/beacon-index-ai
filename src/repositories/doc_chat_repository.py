@@ -14,6 +14,7 @@ from src.models.requests import ChatRequest
 from src.models.view_models.documents_view_model import DocumentsViewModel
 from src.models.view_models.chat_history_view_model import ChatHistoryViewModel
 from src.services.prompts.prompting import contextualize_question_prompt, context_qa_prompt
+from src.services.evaluate.deepeval_evaluate import DeepevalEvaluate
 
 class DocChatRepository:
     def __init__(self):
@@ -270,6 +271,10 @@ class DocChatRepository:
 
         # Update the chat history
         await self._update_chat_history(chat_request["chat_id"], chat_request["query"], result)
+
+        # Evaluate response
+        deepeval = DeepevalEvaluate()
+        deepeval.evaluate(chat_request["query"], result, None, [])
 
         return {
             "response": result,
