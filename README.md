@@ -1,21 +1,69 @@
 # Beacon Index AI (API) 🚀
 
-## Environment Setup
+## 📁 Project Structure & Key Files
 
-Create a `.env` file in the project root with the following fields:
+### 🏁 Main Entrypoint
 
-```
-AZURE_OPENAI_API_KEY=your-openai-api-key-here
-AZURE_OPENAI_ENDPOINT=https://your-openai-endpoint-placeholder
-AZURE_OPENAI_GPT_4O_FULL_ENDPOINT=https://your-gpt-4o-endpoint-placeholder
-AZURE_CONTENT_SAFETY_ENDPOINT=https://your-content-safety-endpoint-placeholder
-AZURE_CONTENT_SAFETY_KEY=your-content-safety-key-here
-AZURE_STORAGE_CONN_STR=your-storage-connection-string-here
-AZURE_MONITOR_CONN_STR=your-monitor-connection-string-here
-AZ_EMC_COSMOS_DB_CONNECTION_STRING=your-cosmos-db-connection-string-here
-AZ_EMC_COSMOS_DB_SITES_DATABASE_NAME=your-sites-database-name-here
-AZ_EMC_COSMOS_DB_CHAT_HISTORY_CONTAINER_NAME=your-chat-history-container-name-here
-```
+- **`src/main.py`** 🚦  
+   FastAPI app setup, routing, CORS, logging, and admin endpoints.
+
+### ⚙️ Core Configuration
+
+- **`src/core/app_settings.py`** 🔑  
+   Loads secrets from Azure Key Vault & environment variables.
+- **`src/core/config.yaml`** 📝  
+   Contains non-secret configuration values.
+  Secrets and sensitive settings are managed separately via Azure Key Vault.
+- **`.env`** 🌱  
+   Local environment variables for dev/test.
+
+### 🧠 LLM & Vector Stores
+
+- **`src/services/llm/providers.py`** 🤖  
+   Azure OpenAI LLM and embeddings setup.
+- **`src/services/vectorstores/faiss_store.py`** 🗄️  
+   FAISS-based vector store for semantic search.
+
+### 🧩 Document Processing
+
+- **`src/services/extractors/docling_file_extractor.py`** 📑  
+   Uses Docling from IBM research for advanced PDF/document chunking.
+- **`src/services/extractors/pdf_chunker.py`** ✂️  
+   PDF chunking and table extraction utility.
+
+### ☁️ Azure Integrations
+
+- **`src/services/azure/blob.py`** 🗂️  
+   Azure Blob Storage upload/listing.
+- **`src/services/azure/cosmos.py`** 🪐  
+   Cosmos DB async CRUD operations.
+
+### 📝 Prompts & Utils
+
+- **`src/services/prompts/prompting.py`** 🗣️  
+   Prompt templates for LLM and chat.
+- **`src/utils/az_logger.py`** 📊  
+   Structured logging to Azure Monitor.
+- **`src/utils/custom_exception.py`** 🚨  
+   Custom error handling for better debugging.
+
+### 🧪 Testing
+
+- **`tests/test_basics.py`** 🧪  
+   Basic API endpoint tests using FastAPI’s test client.
+
+### 🛠️ Setup & Dependencies
+
+- **`requirements.txt`** 📦  
+   Main Python dependencies.
+- **`requirements-heavy.txt`** 🏋️  
+   Extra dependencies for local GPU/dev (Docling, Torch).
+- **`setup.py`** 🛠️  
+   Python package setup.
+- **`Dockerfile`** 🐳  
+   Containerization for deployment.
+
+---
 
 ## Running the FastAPI Application
 
