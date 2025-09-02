@@ -78,8 +78,7 @@ def test_chat_missing_client_and_product_id(client: TestClient):
         },
         json=payload
     )
-    assert response.status_code in(422, 500)
-    print("My-message", response.json())
+    assert response.status_code == 422
     assert any("Field required" in error["msg"] for error in response.json()["detail"])
     
 def test_chat_missing_query_field(client: TestClient):

@@ -1,3 +1,4 @@
+import os
 import uuid
 import structlog
 
@@ -188,24 +189,24 @@ class DocChatRepository:
 
         self.log.info("Chat history updated successfully", chat_id=chat_id, messages_count=len(chat_details.messages))
     
-    # Todo: Log to file only in local
     def _log_prompt(self, prompt, prompt_type: str = "text"):
-        # save_path = os.getcwd()
-        # vector_store_dir = os.path.join(save_path, "prompt_logging")
-        # os.makedirs(vector_store_dir, exist_ok=True)
-        
-        # # Create a unique filename for each log
-        # log_filename = f"prompt_log_{prompt_type}_{uuid.uuid4().hex}.txt"
-        # log_filepath = os.path.join(vector_store_dir, log_filename)
-        
-        # with open(log_filepath, "w", encoding="utf-8") as f:
-        #     if hasattr(prompt, "messages"):
-        #         for msg in prompt.messages:
-        #             f.write(f"{type(msg).__name__}: {msg.content}\n")
-        #             f.write("----------------------------\n")
-        #     else:
-        #         f.write(str(prompt) + "\n")
-        #         f.write("----------------------------\n")
+        if os.getenv("IS_PROMPT_LOGGING_ENABLED", "false").lower() == "true":
+            save_path = os.getcwd()
+            vector_store_dir = os.path.join(save_path, "prompt_logging")
+            os.makedirs(vector_store_dir, exist_ok=True)
+            
+            # Create a unique filename for each log
+            log_filename = f"prompt_log_{prompt_type}_{uuid.uuid4().hex}.txt"
+            log_filepath = os.path.join(vector_store_dir, log_filename)
+            
+            with open(log_filepath, "w", encoding="utf-8") as f:
+                if hasattr(prompt, "messages"):
+                    for msg in prompt.messages:
+                        f.write(f"{type(msg).__name__}: {msg.content}\n")
+                        f.write("----------------------------\n")
+                else:
+                    f.write(str(prompt) + "\n")
+                    f.write("----------------------------\n")
 
         return prompt
     
