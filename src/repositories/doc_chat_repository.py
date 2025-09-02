@@ -14,6 +14,7 @@ from src.models.requests import ChatRequest
 from src.models.view_models.documents_view_model import DocumentsViewModel
 from src.models.view_models.chat_history_view_model import ChatHistoryViewModel
 from src.services.prompts.prompting import contextualize_question_prompt, context_qa_prompt
+from src.services.evaluate.deepeval_evaluate import DeepevalEvaluate
 
 class DocChatRepository:
     def __init__(self):
@@ -23,6 +24,7 @@ class DocChatRepository:
         self.llm_service = LLMService()
         self.faiss_service = FaissService()
         self.azOpenAIllm = self.llm_service.getAzOpenAIllm()
+        self.deepeval = DeepevalEvaluate()
     
     async def upload_document(self, client_id: str, product_id: str, data: UploadFile = File(...)) -> str:
         """
@@ -210,16 +212,24 @@ class DocChatRepository:
     async def chat(self, chat_request: ChatRequest) -> dict:
         # If chat_id is not present, initialize a new chat
         if not chat_request.get("chat_id"):
+            self.log.info("No chat_id provided, initializing a new chat")
             chat_details = await self._init_chat(chat_request["client_id"], chat_request["product_id"])
             chat_request["chat_id"] = chat_details.id
+            self.log.info("New chat initialized", chat_id=chat_request["chat_id"])
         
-        self.log.info("Loading vector store", client_id=chat_request["client_id"], product_id=chat_request["product_id"])
-
         # Load the vector store
+        self.log.info("Loading vector store...")
         vector_store = self.faiss_service.load_vector_store(chat_request["client_id"], chat_request["product_id"])
+        self.log.info("Vector store loaded successfully")
 
         # Create retriever from vector store
+        self.log.info("Creating retriever from vector store...")
         retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 5})
+        self.log.info("Retriever created successfully")
+        
+        self.log.info("Fetching conversation history")
+        conversation_history = await self._get_chat_history(chat_request["chat_id"])
+        self.log.info("Conversation history fetched successfully")
 
         self.log.info("Preparing question rewriter and retrieval chain")
 
@@ -237,8 +247,11 @@ class DocChatRepository:
 
         # Retrieve docs for rewritten question
         retrieve_docs = (
-            question_rewriter
-            | RunnableLambda(lambda prompt: self._log_prompt(prompt, prompt_type="rewritten_question"))
+            {
+                "question": question_rewriter,
+                "chat_history": RunnableLambda(lambda x: x["chat_history"])
+            }
+            | RunnableLambda(lambda x: self._log_prompt(x["question"], prompt_type="rewritten_question"))
             | retriever
             | self._format_docs
         )
@@ -262,14 +275,23 @@ class DocChatRepository:
         result = chain.invoke(
             {
                 "question": chat_request["query"],
-                "chat_history": await self._get_chat_history(chat_request["chat_id"]),
+                "chat_history": conversation_history,
             }
         )
 
-        self.log.info("Updating chat details with new messages")
+        # Evaluate response
+        self.log.info("Evaluating the response")
+        retrieved_docs = retrieve_docs.invoke({
+            "question": chat_request["query"],
+            "chat_history": conversation_history,
+        })
+        self.deepeval.evaluate(chat_request["query"], result, None, [retrieved_docs])
+        self.log.info("Response evaluated successfully")
 
         # Update the chat history
+        self.log.info("Updating chat details with new messages")
         await self._update_chat_history(chat_request["chat_id"], chat_request["query"], result)
+        self.log.info("Chat details updated successfully")
 
         return {
             "response": result,

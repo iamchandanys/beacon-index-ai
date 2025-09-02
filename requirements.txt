@@ -22,5 +22,6 @@ azure-cosmos==4.9.0
 azure-identity==1.24.0
 azure-keyvault-secrets==4.10.0
 pytest==8.4.1
+deepeval==3.4.2
 
 -e . # <- lets you edit your code and see changes instantly when running or importing your package.
