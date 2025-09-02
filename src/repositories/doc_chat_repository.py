@@ -210,6 +210,11 @@ class DocChatRepository:
         return prompt
     
     async def chat(self, chat_request: ChatRequest) -> dict:
+        # If query is not provided, then return an error
+        if not chat_request["query"]:
+            self.log.error("Query is empty in chat request")
+            return {"error": "Query is required"}
+
         # If chat_id is not present, initialize a new chat
         if not chat_request.get("chat_id"):
             self.log.info("No chat_id provided, initializing a new chat")
