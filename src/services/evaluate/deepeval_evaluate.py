@@ -37,7 +37,7 @@ class DeepevalEvaluate:
         )
         return model
     
-    def evaluate(self, input: str, actual_output: str, expected_output: str = None, retrieval_context: str = None):
+    def evaluate(self, input: str, actual_output: str, expected_output: str = None, retrieval_context: list[str] = None):
         test_case = LLMTestCase(
             input=input,
             actual_output=actual_output,
