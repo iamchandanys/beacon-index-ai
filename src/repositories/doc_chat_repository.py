@@ -25,6 +25,8 @@ class DocChatRepository:
         self.llm_service = LLMService()
         self.faiss_service = FaissService()
         self.azOpenAIllm = self.llm_service.getAzOpenAIllm()
+        self.isPromptLoggingEnabled = os.getenv("IS_PROMPT_LOGGING_ENABLED", "false").lower() == "true"
+        self.isDeepevalEnabled = os.getenv("IS_DEEPEVAL_ENABLED", "false").lower() == "true"
         self.deepeval = DeepevalEvaluate()
     
     async def upload_document(self, client_id: str, product_id: str, data: UploadFile = File(...)) -> str:
@@ -190,7 +192,7 @@ class DocChatRepository:
         self.log.info("Chat history updated successfully", chat_id=chat_id, messages_count=len(chat_details.messages))
     
     def _log_prompt(self, prompt, prompt_type: str = "text"):
-        if os.getenv("IS_PROMPT_LOGGING_ENABLED", "false").lower() == "true":
+        if self.isPromptLoggingEnabled:
             save_path = os.getcwd()
             vector_store_dir = os.path.join(save_path, "prompt_logging")
             os.makedirs(vector_store_dir, exist_ok=True)
@@ -286,13 +288,18 @@ class DocChatRepository:
         )
 
         # Evaluate response
-        self.log.info("Evaluating the response")
-        retrieved_docs = retrieve_docs.invoke({
-            "question": chat_request["query"],
-            "chat_history": conversation_history,
-        })
-        self.deepeval.evaluate(chat_request["query"], result, None, [retrieved_docs])
-        self.log.info("Response evaluated successfully")
+        if self.isDeepevalEnabled:
+            self.log.info("Evaluating the response")
+            retrieved_docs = retrieve_docs.invoke({
+                "question": chat_request["query"],
+                "chat_history": conversation_history,
+            })
+            self.deepeval.evaluate(chat_request["query"], result, None, [retrieved_docs])
+            self.log.info("Response evaluated successfully")
+        else:
+            self.log.info("Skipping evaluation as Deepeval is disabled")
+            # Remove CONFIDENT_API_KEY from environment if present
+            os.environ.pop("CONFIDENT_API_KEY", None)
 
         # Update the chat history
         self.log.info("Updating chat details with new messages")
