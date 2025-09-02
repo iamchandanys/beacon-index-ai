@@ -73,7 +73,7 @@ for router, prefix, tags in routers:
 @app.get("/")
 async def root():
     logger.info("root.called")
-    return {"message": "Welcome to the Document Portal API"}
+    return {"message": "Welcome to Beacon API"}
 
 # Admin endpoint to refresh app settings configurations
 @app.post("/refresh-config")

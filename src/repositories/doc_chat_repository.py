@@ -1,3 +1,4 @@
+import os
 import uuid
 import structlog
 
@@ -188,28 +189,33 @@ class DocChatRepository:
 
         self.log.info("Chat history updated successfully", chat_id=chat_id, messages_count=len(chat_details.messages))
     
-    # Todo: Log to file only in local
     def _log_prompt(self, prompt, prompt_type: str = "text"):
-        # save_path = os.getcwd()
-        # vector_store_dir = os.path.join(save_path, "prompt_logging")
-        # os.makedirs(vector_store_dir, exist_ok=True)
-        
-        # # Create a unique filename for each log
-        # log_filename = f"prompt_log_{prompt_type}_{uuid.uuid4().hex}.txt"
-        # log_filepath = os.path.join(vector_store_dir, log_filename)
-        
-        # with open(log_filepath, "w", encoding="utf-8") as f:
-        #     if hasattr(prompt, "messages"):
-        #         for msg in prompt.messages:
-        #             f.write(f"{type(msg).__name__}: {msg.content}\n")
-        #             f.write("----------------------------\n")
-        #     else:
-        #         f.write(str(prompt) + "\n")
-        #         f.write("----------------------------\n")
+        if os.getenv("IS_PROMPT_LOGGING_ENABLED", "false").lower() == "true":
+            save_path = os.getcwd()
+            vector_store_dir = os.path.join(save_path, "prompt_logging")
+            os.makedirs(vector_store_dir, exist_ok=True)
+            
+            # Create a unique filename for each log
+            log_filename = f"prompt_log_{prompt_type}_{uuid.uuid4().hex}.txt"
+            log_filepath = os.path.join(vector_store_dir, log_filename)
+            
+            with open(log_filepath, "w", encoding="utf-8") as f:
+                if hasattr(prompt, "messages"):
+                    for msg in prompt.messages:
+                        f.write(f"{type(msg).__name__}: {msg.content}\n")
+                        f.write("----------------------------\n")
+                else:
+                    f.write(str(prompt) + "\n")
+                    f.write("----------------------------\n")
 
         return prompt
     
     async def chat(self, chat_request: ChatRequest) -> dict:
+        # If query is not provided, then return an error
+        if not chat_request["query"]:
+            self.log.error("Query is empty in chat request")
+            return {"error": "Query is required"}
+
         # If chat_id is not present, initialize a new chat
         if not chat_request.get("chat_id"):
             self.log.info("No chat_id provided, initializing a new chat")

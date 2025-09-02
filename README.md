@@ -81,3 +81,13 @@ To start the FastAPI server locally:
    ```
 
 3. Open your browser and go to [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) to access the Swagger UI for API testing.
+
+#### Running Tests
+
+To run all tests using pytest, use the following command in your project root:
+
+```cmd
+pytest -q
+```
+
+The `-q` flag runs pytest in quiet mode, showing only minimal output (just test results).
