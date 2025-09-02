@@ -298,8 +298,6 @@ class DocChatRepository:
             self.log.info("Response evaluated successfully")
         else:
             self.log.info("Skipping evaluation as Deepeval is disabled")
-            # Remove CONFIDENT_API_KEY from environment if present
-            os.environ.pop("CONFIDENT_API_KEY", None)
 
         # Update the chat history
         self.log.info("Updating chat details with new messages")
