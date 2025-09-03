@@ -8,6 +8,7 @@ langchain-community==0.3.27
 langchain-groq==0.3.6
 langchain-google-genai==2.1.9
 langchain-openai==0.3.28
+langgraph==0.6.6
 pypdf==5.9.0
 faiss-cpu==1.11.0.post1
 structlog==25.4.0

@@ -16,6 +16,7 @@ from src.models.view_models.documents_view_model import DocumentsViewModel
 from src.models.view_models.chat_history_view_model import ChatHistoryViewModel
 from src.services.prompts.prompting import contextualize_question_prompt, context_qa_prompt
 from src.services.evaluate.deepeval_evaluate import DeepevalEvaluate
+from src.services.memory.user_memory import UserMemory
 
 class DocChatRepository:
     def __init__(self):
@@ -51,9 +52,19 @@ class DocChatRepository:
             raise ValueError("File is empty or not provided.")
         
         # Validate the file type
-        if data.content_type != "application/pdf":
+        allowed_types = [
+            "application/pdf",  # .pdf
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",  # .docx
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",  # .pptx
+            "text/markdown",  # .md
+            "text/plain",  # .txt
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",  # .xlsx
+            "text/csv",  # .csv
+        ]
+        
+        if data.content_type not in allowed_types:
             self.log.error("Invalid file type", content_type=data.content_type)
-            raise ValueError("Only PDF files are allowed.")
+            raise ValueError("Only files of type PDF, DOCX, PPTX, MD, TXT, XLSX, or CSV are allowed.")
         
         # Validate the file size (limit to 5 MB)
         if data.size > 5 * 1024 * 1024:  # 5 MB limit
@@ -235,9 +246,17 @@ class DocChatRepository:
         retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 5})
         self.log.info("Retriever created successfully")
         
+        # Get chat history
         self.log.info("Fetching conversation history")
         conversation_history = await self._get_chat_history(chat_request["chat_id"])
         self.log.info("Conversation history fetched successfully")
+        
+        # Get user memory
+        user_memories = ""
+        if chat_request["user_id"]:
+            self.log.info("Fetching user memory")
+            user_memories = UserMemory(chat_request["user_id"]).retrieve_memories(chat_request["query"])
+            self.log.info("User memory retrieved successfully")
 
         self.log.info("Preparing question rewriter and retrieval chain")
 
@@ -270,6 +289,7 @@ class DocChatRepository:
                 "context": retrieve_docs,
                 "input": RunnableLambda(lambda x: x["question"]),
                 "chat_history": RunnableLambda(lambda x: x["chat_history"]),
+                "user_memory": RunnableLambda(lambda x: x["user_memory"]),
             }
             | context_qa_prompt
             | RunnableLambda(lambda prompt: self._log_prompt(prompt, prompt_type="context_qa_prompt"))
@@ -284,6 +304,7 @@ class DocChatRepository:
             {
                 "question": chat_request["query"],
                 "chat_history": conversation_history,
+                "user_memory": user_memories
             }
         )
 
