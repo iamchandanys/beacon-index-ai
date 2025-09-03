@@ -17,10 +17,13 @@ from src.models.view_models.chat_history_view_model import ChatHistoryViewModel
 from src.services.prompts.prompting import contextualize_question_prompt, context_qa_prompt
 from src.services.evaluate.deepeval_evaluate import DeepevalEvaluate
 from src.services.memory.user_memory import UserMemory
+from src.core.app_settings import get_settings
+from src.services.evaluate.azure_cs.content_safety_evaluate import is_content_safe
 
 class DocChatRepository:
     def __init__(self):
         self.log = structlog.get_logger(self.__class__.__name__)
+        self.settings = get_settings()
         self.blob_service = BlobService()
         self.cosmos_service = CosmosService()
         self.llm_service = LLMService()
@@ -235,6 +238,14 @@ class DocChatRepository:
             chat_details = await self._init_chat(chat_request["client_id"], chat_request["product_id"])
             chat_request["chat_id"] = chat_details.id
             self.log.info("New chat initialized", chat_id=chat_request["chat_id"])
+            
+        # Check is content safe
+        if not is_content_safe(chat_request["query"], self.settings.AZURE_CONTENT_SAFETY_ENDPOINT, self.settings.AZURE_CONTENT_SAFETY_KEY):
+            self.log.error("Unsafe content detected in chat request")
+            return {
+                "response": "Your message contains content that is not allowed. Please rephrase your query and try again.",
+                "chatId": chat_request["chat_id"]
+            }
         
         # Load the vector store
         self.log.info("Loading vector store...")
