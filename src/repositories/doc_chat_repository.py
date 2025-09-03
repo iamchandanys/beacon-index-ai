@@ -227,125 +227,127 @@ class DocChatRepository:
         return prompt
     
     async def chat(self, chat_request: ChatRequest) -> dict:
-        # If query is not provided, then return an error
-        if not chat_request["query"]:
-            self.log.error("Query is empty in chat request")
-            return {"error": "Query is required"}
-
-        # If chat_id is not present, initialize a new chat
-        if not chat_request.get("chat_id"):
-            self.log.info("No chat_id provided, initializing a new chat")
-            chat_details = await self._init_chat(chat_request["client_id"], chat_request["product_id"])
-            chat_request["chat_id"] = chat_details.id
-            self.log.info("New chat initialized", chat_id=chat_request["chat_id"])
-        
-        # Check is content safe
         try:
+            # If query is not provided, then return an error
+            if not chat_request["query"]:
+                self.log.error("Query is empty in chat request")
+                return {"error": "Query is required"}
+
+            # If chat_id is not present, initialize a new chat
+            if not chat_request.get("chat_id"):
+                self.log.info("No chat_id provided, initializing a new chat")
+                chat_details = await self._init_chat(chat_request["client_id"], chat_request["product_id"])
+                chat_request["chat_id"] = chat_details.id
+                self.log.info("New chat initialized", chat_id=chat_request["chat_id"])
+            
+            # Check is content safe
             is_safe = is_content_safe(chat_request["query"], self.settings.AZURE_CONTENT_SAFETY_ENDPOINT, self.settings.AZURE_CONTENT_SAFETY_KEY)
+            
+            if not is_safe:
+                self.log.error("Unsafe content detected in chat request")
+                return {
+                    "response": "Your message contains content that is not allowed. Please rephrase your query and try again.",
+                    "chatId": chat_request["chat_id"]
+                }
+            
+            # Load the vector store
+            self.log.info("Loading vector store...")
+            vector_store = self.faiss_service.load_vector_store(chat_request["client_id"], chat_request["product_id"])
+            self.log.info("Vector store loaded successfully")
+
+            # Create retriever from vector store
+            self.log.info("Creating retriever from vector store...")
+            retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 5})
+            self.log.info("Retriever created successfully")
+            
+            # Get chat history
+            self.log.info("Fetching conversation history")
+            conversation_history = await self._get_chat_history(chat_request["chat_id"])
+            self.log.info("Conversation history fetched successfully")
+            
+            # Get user memory
+            user_memories = ""
+            if chat_request["user_id"]:
+                self.log.info("Fetching user memory")
+                user_memories = UserMemory(chat_request["user_id"]).retrieve_memories(chat_request["query"])
+                self.log.info("User memory retrieved successfully")
+
+            self.log.info("Preparing question rewriter and retrieval chain")
+
+            # Rewrite user question with chat history context
+            question_rewriter = (
+                {
+                    "input": RunnableLambda(lambda x: x["question"]), 
+                    "chat_history": RunnableLambda(lambda x: x["chat_history"])
+                }
+                | contextualize_question_prompt 
+                | RunnableLambda(lambda prompt: self._log_prompt(prompt, prompt_type="contextualize_question_prompt"))
+                | self.azOpenAIllm 
+                | StrOutputParser()
+            )
+
+            # Retrieve docs for rewritten question
+            retrieve_docs = (
+                {
+                    "question": question_rewriter,
+                    "chat_history": RunnableLambda(lambda x: x["chat_history"])
+                }
+                | RunnableLambda(lambda x: self._log_prompt(x["question"], prompt_type="rewritten_question"))
+                | retriever
+                | self._format_docs
+            )
+
+            # Answer using retrieved docs + original input + chat history
+            chain = (
+                {
+                    "context": retrieve_docs,
+                    "input": RunnableLambda(lambda x: x["question"]),
+                    "chat_history": RunnableLambda(lambda x: x["chat_history"]),
+                    "user_memory": RunnableLambda(lambda x: x["user_memory"]),
+                }
+                | context_qa_prompt
+                | RunnableLambda(lambda prompt: self._log_prompt(prompt, prompt_type="context_qa_prompt"))
+                | self.azOpenAIllm
+                | StrOutputParser()
+            )
+            
+            self.log.info("Invoking chain for response generation")
+
+            # Invoke the chain
+            result = chain.invoke(
+                {
+                    "question": chat_request["query"],
+                    "chat_history": conversation_history,
+                    "user_memory": user_memories
+                }
+            )
+
+            # Evaluate response
+            if self.isDeepevalEnabled:
+                self.log.info("Evaluating the response")
+                retrieved_docs = retrieve_docs.invoke({
+                    "question": chat_request["query"],
+                    "chat_history": conversation_history,
+                })
+                self.deepeval.evaluate(chat_request["query"], result, None, [retrieved_docs])
+                self.log.info("Response evaluated successfully")
+            else:
+                self.log.info("Skipping evaluation as Deepeval is disabled")
+
+            # Update the chat history
+            self.log.info("Updating chat details with new messages")
+            await self._update_chat_history(chat_request["chat_id"], chat_request["query"], result)
+            self.log.info("Chat details updated successfully")
+
+            return {
+                "response": result,
+                "chatId": chat_request["chat_id"]
+            }
+            
         except Exception as e:
-            self.log.error("Content safety check failed", error=str(e))
+            self.log.error("An error occurred during chat processing", error=str(e))
             return {
-                "response": "We were unable to verify the safety of your message due to a system error. Please try again later.",
-                "chatId": chat_request["chat_id"]
+                "response": "Sorry, something went wrong while processing your request. Please try again later.",
+                "chatId": chat_request.get("chat_id"),
+                "error": str(e)
             }
-        
-        if not is_safe:
-            self.log.error("Unsafe content detected in chat request")
-            return {
-                "response": "Your message contains content that is not allowed. Please rephrase your query and try again.",
-                "chatId": chat_request["chat_id"]
-            }
-        
-        # Load the vector store
-        self.log.info("Loading vector store...")
-        vector_store = self.faiss_service.load_vector_store(chat_request["client_id"], chat_request["product_id"])
-        self.log.info("Vector store loaded successfully")
-
-        # Create retriever from vector store
-        self.log.info("Creating retriever from vector store...")
-        retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 5})
-        self.log.info("Retriever created successfully")
-        
-        # Get chat history
-        self.log.info("Fetching conversation history")
-        conversation_history = await self._get_chat_history(chat_request["chat_id"])
-        self.log.info("Conversation history fetched successfully")
-        
-        # Get user memory
-        user_memories = ""
-        if chat_request["user_id"]:
-            self.log.info("Fetching user memory")
-            user_memories = UserMemory(chat_request["user_id"]).retrieve_memories(chat_request["query"])
-            self.log.info("User memory retrieved successfully")
-
-        self.log.info("Preparing question rewriter and retrieval chain")
-
-        # Rewrite user question with chat history context
-        question_rewriter = (
-            {
-                "input": RunnableLambda(lambda x: x["question"]), 
-                "chat_history": RunnableLambda(lambda x: x["chat_history"])
-            }
-            | contextualize_question_prompt 
-            | RunnableLambda(lambda prompt: self._log_prompt(prompt, prompt_type="contextualize_question_prompt"))
-            | self.azOpenAIllm 
-            | StrOutputParser()
-        )
-
-        # Retrieve docs for rewritten question
-        retrieve_docs = (
-            {
-                "question": question_rewriter,
-                "chat_history": RunnableLambda(lambda x: x["chat_history"])
-            }
-            | RunnableLambda(lambda x: self._log_prompt(x["question"], prompt_type="rewritten_question"))
-            | retriever
-            | self._format_docs
-        )
-
-        # Answer using retrieved docs + original input + chat history
-        chain = (
-            {
-                "context": retrieve_docs,
-                "input": RunnableLambda(lambda x: x["question"]),
-                "chat_history": RunnableLambda(lambda x: x["chat_history"]),
-                "user_memory": RunnableLambda(lambda x: x["user_memory"]),
-            }
-            | context_qa_prompt
-            | RunnableLambda(lambda prompt: self._log_prompt(prompt, prompt_type="context_qa_prompt"))
-            | self.azOpenAIllm
-            | StrOutputParser()
-        )
-        
-        self.log.info("Invoking chain for response generation")
-
-        # Invoke the chain
-        result = chain.invoke(
-            {
-                "question": chat_request["query"],
-                "chat_history": conversation_history,
-                "user_memory": user_memories
-            }
-        )
-
-        # Evaluate response
-        if self.isDeepevalEnabled:
-            self.log.info("Evaluating the response")
-            retrieved_docs = retrieve_docs.invoke({
-                "question": chat_request["query"],
-                "chat_history": conversation_history,
-            })
-            self.deepeval.evaluate(chat_request["query"], result, None, [retrieved_docs])
-            self.log.info("Response evaluated successfully")
-        else:
-            self.log.info("Skipping evaluation as Deepeval is disabled")
-
-        # Update the chat history
-        self.log.info("Updating chat details with new messages")
-        await self._update_chat_history(chat_request["chat_id"], chat_request["query"], result)
-        self.log.info("Chat details updated successfully")
-
-        return {
-            "response": result,
-            "chatId": chat_request["chat_id"]
-        }
