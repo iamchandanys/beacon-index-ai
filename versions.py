@@ -11,6 +11,7 @@ packages = [
     "langchain-groq",
     "langchain-google-genai",
     "langchain-openai",
+    "langgraph",
     "pypdf",
     "faiss-cpu",
     "structlog",

@@ -1,5 +1,18 @@
 # Beacon Index AI (API) 🚀
 
+## 🌐 Live URLs
+
+- Frontend: [https://beaconai.azurewebsites.net/chat-window](https://beaconai.azurewebsites.net/chat-window)
+- Backend Swagger: [https://beacon-index-ai.azurewebsites.net/docs](https://beacon-index-ai.azurewebsites.net/docs)
+
+## 📋 Assignment
+
+- ✅ Enable the project for every document format (.ppt, .docx, .md, .txt, .pdf, .xlsx, .csv) - **Done**
+- ✅ Add code for handling table and image data. - **Done**
+- ✅ Integrate an evaluation matrix using DeepEval. - **Done**
+- ✅ Write at least 10 test cases and ensure these test cases are validated before and after each commit. - **Done**
+- ✅ Implement LangChain In-Memory Cache inside the project. - **Done**
+
 ## 📁 Project Structure & Key Files
 
 ### 🏁 Main Entrypoint

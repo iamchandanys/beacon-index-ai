@@ -82,9 +82,11 @@ context_qa_prompt = ChatPromptTemplate.from_messages([
      "- After the answer, on a new line, ask exactly one short, relevant follow-up question.\n"
      "- Still ask the follow-up question even if you replied with 'Sorry, I couldn't find the answer in the provided context.'\n"
      "- Use chat_history only to resolve references and maintain continuity.\n"
+     "- Use user_memory to personalize responses if relevant.\n"
      "- Always format your reply using Markdown."
     ),
     ("system", "Context:\n{context}"),
+    ("system", "User Memory:\n{user_memory}"),
     MessagesPlaceholder("chat_history"),
     ("human", "{input}"),
 ])
