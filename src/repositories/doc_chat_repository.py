@@ -238,9 +238,18 @@ class DocChatRepository:
             chat_details = await self._init_chat(chat_request["client_id"], chat_request["product_id"])
             chat_request["chat_id"] = chat_details.id
             self.log.info("New chat initialized", chat_id=chat_request["chat_id"])
-            
+        
         # Check is content safe
-        if not is_content_safe(chat_request["query"], self.settings.AZURE_CONTENT_SAFETY_ENDPOINT, self.settings.AZURE_CONTENT_SAFETY_KEY):
+        try:
+            is_safe = is_content_safe(chat_request["query"], self.settings.AZURE_CONTENT_SAFETY_ENDPOINT, self.settings.AZURE_CONTENT_SAFETY_KEY)
+        except Exception as e:
+            self.log.error("Content safety check failed", error=str(e))
+            return {
+                "response": "We were unable to verify the safety of your message due to a system error. Please try again later.",
+                "chatId": chat_request["chat_id"]
+            }
+        
+        if not is_safe:
             self.log.error("Unsafe content detected in chat request")
             return {
                 "response": "Your message contains content that is not allowed. Please rephrase your query and try again.",
