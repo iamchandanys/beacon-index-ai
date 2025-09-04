@@ -40,8 +40,6 @@
 
 - [**src/services/extractors/docling_file_extractor.py**](https://github.com/iamchandanys/beacon-index-ai/blob/dev/src/services/extractors/docling_file_extractor.py) 📑  
    Uses Docling from IBM research for advanced PDF/document chunking.
-- [**src/services/extractors/pdf_chunker.py**](https://github.com/iamchandanys/beacon-index-ai/blob/dev/src/services/extractors/pdf_chunker.py) ✂️  
-   PDF chunking and table extraction utility.
 
 ### ☁️ Azure Integrations
 
