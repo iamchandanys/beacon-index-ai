@@ -2,7 +2,7 @@
 
 ## 🌐 Live URLs
 
-- Frontend: [https://beaconai.azurewebsites.net/chat-window](https://beaconai.azurewebsites.net/chat-window)
+- Frontend: [https://beaconai.azurewebsites.net/cw](https://beaconai.azurewebsites.net/cw?cid=d6b607aa-578f-4916-90fa-e2358f366726&pid=15f4193d-1ae5-45b2-8cc3-4a82ac311903)
 - Backend Swagger: [https://beacon-index-ai.azurewebsites.net/docs](https://beacon-index-ai.azurewebsites.net/docs)
 
 ## 📋 Assignment
@@ -17,62 +17,62 @@
 
 ### 🏁 Main Entrypoint
 
-- [**src/main.py**](https://github.com/iamchandanys/beacon-index-ai/blob/main/src/main.py) 🚦  
+- [**src/main.py**](https://github.com/iamchandanys/beacon-index-ai/blob/dev/src/main.py) 🚦  
    FastAPI app setup, routing, CORS, logging, and admin endpoints.
 
 ### ⚙️ Core Configuration
 
-- [**src/core/app_settings.py**](https://github.com/iamchandanys/beacon-index-ai/blob/main/src/core/app_settings.py) 🔑  
+- [**src/core/app_settings.py**](https://github.com/iamchandanys/beacon-index-ai/blob/dev/src/core/app_settings.py) 🔑  
    Loads secrets from Azure Key Vault & environment variables.
-- [**src/core/config.yaml**](https://github.com/iamchandanys/beacon-index-ai/blob/main/src/core/config.yaml) 📝  
+- [**src/core/config.yaml**](https://github.com/iamchandanys/beacon-index-ai/blob/dev/src/core/config.yaml) 📝  
    Contains non-secret configuration values. Secrets and sensitive settings are managed separately via Azure Key Vault.
-- [**.env**](https://github.com/iamchandanys/beacon-index-ai/blob/main/.env) 🌱  
+- [**.env**](https://github.com/iamchandanys/beacon-index-ai/blob/dev/.env) 🌱  
    Local environment variables for dev/test.
 
 ### 🧠 LLM & Vector Stores
 
-- [**src/services/llm/providers.py**](https://github.com/iamchandanys/beacon-index-ai/blob/main/src/services/llm/providers.py) 🤖  
+- [**src/services/llm/providers.py**](https://github.com/iamchandanys/beacon-index-ai/blob/dev/src/services/llm/providers.py) 🤖  
    Azure OpenAI LLM and embeddings setup.
-- [**src/services/vectorstores/faiss_store.py**](https://github.com/iamchandanys/beacon-index-ai/blob/main/src/services/vectorstores/faiss_store.py) 🗄️  
+- [**src/services/vectorstores/faiss_store.py**](https://github.com/iamchandanys/beacon-index-ai/blob/dev/src/services/vectorstores/faiss_store.py) 🗄️  
    FAISS-based vector store for semantic search.
 
 ### 🧩 Document Processing
 
-- [**src/services/extractors/docling_file_extractor.py**](https://github.com/iamchandanys/beacon-index-ai/blob/main/src/services/extractors/docling_file_extractor.py) 📑  
+- [**src/services/extractors/docling_file_extractor.py**](https://github.com/iamchandanys/beacon-index-ai/blob/dev/src/services/extractors/docling_file_extractor.py) 📑  
    Uses Docling from IBM research for advanced PDF/document chunking.
-- [**src/services/extractors/pdf_chunker.py**](https://github.com/iamchandanys/beacon-index-ai/blob/main/src/services/extractors/pdf_chunker.py) ✂️  
+- [**src/services/extractors/pdf_chunker.py**](https://github.com/iamchandanys/beacon-index-ai/blob/dev/src/services/extractors/pdf_chunker.py) ✂️  
    PDF chunking and table extraction utility.
 
 ### ☁️ Azure Integrations
 
-- [**src/services/azure/blob.py**](https://github.com/iamchandanys/beacon-index-ai/blob/main/src/services/azure/blob.py) 🗂️  
+- [**src/services/azure/blob.py**](https://github.com/iamchandanys/beacon-index-ai/blob/dev/src/services/azure/blob.py) 🗂️  
    Azure Blob Storage upload/listing.
-- [**src/services/azure/cosmos.py**](https://github.com/iamchandanys/beacon-index-ai/blob/main/src/services/azure/cosmos.py) 🪐  
+- [**src/services/azure/cosmos.py**](https://github.com/iamchandanys/beacon-index-ai/blob/dev/src/services/azure/cosmos.py) 🪐  
    Cosmos DB async CRUD operations.
 
 ### 📝 Prompts & Utils
 
-- [**src/services/prompts/prompting.py**](https://github.com/iamchandanys/beacon-index-ai/blob/main/src/services/prompts/prompting.py) 🗣️  
+- [**src/services/prompts/prompting.py**](https://github.com/iamchandanys/beacon-index-ai/blob/dev/src/services/prompts/prompting.py) 🗣️  
    Prompt templates for LLM and chat.
-- [**src/utils/az_logger.py**](https://github.com/iamchandanys/beacon-index-ai/blob/main/src/utils/az_logger.py) 📊  
+- [**src/utils/az_logger.py**](https://github.com/iamchandanys/beacon-index-ai/blob/dev/src/utils/az_logger.py) 📊  
    Structured logging to Azure Monitor.
-- [**src/utils/custom_exception.py**](https://github.com/iamchandanys/beacon-index-ai/blob/main/src/utils/custom_exception.py) 🚨  
+- [**src/utils/custom_exception.py**](https://github.com/iamchandanys/beacon-index-ai/blob/dev/src/utils/custom_exception.py) 🚨  
    Custom error handling for better debugging.
 
 ### 🧪 Testing
 
-- [**tests/test_basics.py**](https://github.com/iamchandanys/beacon-index-ai/blob/main/tests/test_basics.py) 🧪  
+- [**tests/test_basics.py**](https://github.com/iamchandanys/beacon-index-ai/blob/dev/tests/test_basics.py) 🧪  
    Basic API endpoint tests using FastAPI’s test client.
 
 ### 🛠️ Setup & Dependencies
 
-- [**requirements.txt**](https://github.com/iamchandanys/beacon-index-ai/blob/main/requirements.txt) 📦  
+- [**requirements.txt**](https://github.com/iamchandanys/beacon-index-ai/blob/dev/requirements.txt) 📦  
    Main Python dependencies.
-- [**requirements-heavy.txt**](https://github.com/iamchandanys/beacon-index-ai/blob/main/requirements-heavy.txt) 🏋️  
+- [**requirements-heavy.txt**](https://github.com/iamchandanys/beacon-index-ai/blob/dev/requirements-heavy.txt) 🏋️  
    Extra dependencies for local GPU/dev (Docling, Torch).
-- [**setup.py**](https://github.com/iamchandanys/beacon-index-ai/blob/main/setup.py) 🛠️  
+- [**setup.py**](https://github.com/iamchandanys/beacon-index-ai/blob/dev/setup.py) 🛠️  
    Python package setup.
-- [**Dockerfile**](https://github.com/iamchandanys/beacon-index-ai/blob/main/Dockerfile) 🐳  
+- [**Dockerfile**](https://github.com/iamchandanys/beacon-index-ai/blob/dev/Dockerfile) 🐳  
    Containerization for deployment.
 
 ---
