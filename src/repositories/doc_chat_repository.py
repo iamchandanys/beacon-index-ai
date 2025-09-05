@@ -7,6 +7,7 @@ from langchain.schema import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnableLambda
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
+from langchain_core.prompts import ChatPromptTemplate
 from src.services.azure.blob import BlobService
 from src.services.llm.providers import LLMService
 from src.services.vectorstores.faiss_store import FaissService
@@ -351,3 +352,15 @@ class DocChatRepository:
                 "chatId": chat_request.get("chat_id"),
                 "error": str(e)
             }
+    
+    async def chat_stream(self):
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", "You are a helpful assistant."),
+                ("human", "{question}"),
+            ]
+        )
+        
+        chain = prompt | self.azOpenAIllm | StrOutputParser()
+        
+        return chain

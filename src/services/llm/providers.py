@@ -17,6 +17,7 @@ class LLMService:
             max_tokens=self.configs['chat_llm']['az_open_ai']['max_tokens'],
             max_retries=self.configs['chat_llm']['az_open_ai']['max_retries'],
             top_p=self.configs['chat_llm']['az_open_ai']['top_p'],
+            streaming=True,
         )
         return azOpenAIllm
     
