@@ -511,6 +511,6 @@ class DocChatRepository:
             return self._sse_error_response(
                 [
                     self._get_error_sse_message("Sorry, something went wrong while processing your request. Please try again later."),
-                    self._get_chat_id_sse_message(chat_request["chat_id"]),
+                    self._get_chat_id_sse_message(chat_request.get("chat_id", "")),
                 ]
             )
