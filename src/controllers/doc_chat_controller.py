@@ -5,10 +5,9 @@ from fastapi import APIRouter, status
 from src.utils.custom_exception import CustomException
 from fastapi import UploadFile, File
 from fastapi import HTTPException
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse
 from src.repositories.doc_chat_repository import DocChatRepository
 from src.models.requests import ChatRequest
-from typing import AsyncIterator
 
 router = APIRouter()
 
@@ -87,48 +86,21 @@ class DocChatController:
             self.log.error("Chat request failed", error_msg=error_msg)
             raise HTTPException(status_code=500, detail=f"Unexpected error during chat processing.")
         
-    async def a_chat(self, chat_request: ChatRequest):
-        chain = await self.repository.chat_stream()
-        result = await chain.ainvoke(
-            {
-                "question": chat_request["query"]
-            }
-        )
-        return {
-            "answer": result
-        }
-        
     async def chat_stream(self, chat_request: ChatRequest):
-        """
-        Streams tokens using Server-Sent Events (SSE).
-        Each SSE message is a line:  'data: <chunk>\\n\\n'
-        The stream terminates with:   'data: [DONE]\\n\\n'
-        """
-
-        async def sse_event_gen() -> AsyncIterator[str]:
-            # small heartbeat to keep certain proxies happy
-            yield ": ping\n\n"
-
-            chain = await self.repository.chat_stream()
-            # we'll stream token chunks by listening to LangChain's event stream
-            async for token in chain.astream(
-                {
-                    "question": chat_request["query"],
-                },
-                version="v1",
-            ):
-                if token:                             # token is already a STRING
-                    yield f"data: {token}\n\n"
-
-            yield "data: [DONE]\n\n"
-
-        headers = {
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",  # prevents buffering on some proxies
-        }
+        try:
+            self.log.info("Chat stream request received", chat_request=chat_request)
+            
+            return await self.repository.chat_stream(chat_request)
         
-        return StreamingResponse(sse_event_gen(), media_type="text/event-stream", headers=headers)
+        except ValueError as ve:
+            error_msg = CustomException(str(ve), sys).__str__()
+            self.log.error("Chat stream request failed", error_msg=error_msg)
+            raise HTTPException(status_code=400, detail=f"{ve}")
+        
+        except Exception as e:
+            error_msg = CustomException(str(e), sys).__str__()
+            self.log.error("Chat stream request failed", error_msg=error_msg)
+            raise HTTPException(status_code=500, detail=f"Unexpected error during chat stream processing.")
 
 # Initialize the controller
 doc_chat_controller = DocChatController()
@@ -150,11 +122,6 @@ endpoints = [
         "path": "/chat",
         "method": "post",
         "handler": doc_chat_controller.chat
-    },
-    {
-        "path": "/a_chat",
-        "method": "post",
-        "handler": doc_chat_controller.a_chat
     },
     {
         "path": "/chat_stream",
