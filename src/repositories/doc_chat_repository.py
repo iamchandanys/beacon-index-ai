@@ -243,7 +243,7 @@ class DocChatRepository:
                 chat_request["chat_id"] = chat_details.id
                 self.log.info("New chat initialized", chat_id=chat_request["chat_id"])
             
-            # Check is content safe
+            # Check if content is safe
             is_safe = is_content_safe(chat_request["query"], self.settings.AZURE_CONTENT_SAFETY_ENDPOINT, self.settings.AZURE_CONTENT_SAFETY_KEY)
             
             if not is_safe:
@@ -354,13 +354,35 @@ class DocChatRepository:
                 "chatId": chat_request["chat_id"],
                 "error": str(e)
             }
+            
+    def _sse_error_response(self, error_messages: list[str] | str) -> StreamingResponse:
+        # Accepts a single string or a list of error messages
+        if isinstance(error_messages, str):
+            error_messages = [error_messages]
+        async def error_event_gen() -> AsyncIterator[str]:
+            yield ": ping\n\n"
+            for msg in error_messages:
+                yield f"data: {msg}\n\n"
+            yield "data: [DONE]\n\n"
+        headers = {
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        }
+        return StreamingResponse(error_event_gen(), media_type="text/event-stream", headers=headers)
     
+    def _get_chat_id_sse_message(self, chat_id: str) -> str:
+        return f"[CHATID] - {chat_id}\n\n"
+    
+    def _get_error_sse_message(self, error_message: str) -> str:
+        return f"[ERROR] {error_message}\n\n"
+
     async def chat_stream(self, chat_request: ChatRequest) -> StreamingResponse:
         try:
-            # If query is not provided, then return an error
+            # If query is not provided, then return an error as SSE
             if not chat_request["query"]:
                 self.log.error("Query is empty in chat request")
-                return {"error": "Query is required"}
+                return self._sse_error_response(self._get_error_sse_message("Query is required"))
 
             # If chat_id is not present, initialize a new chat
             if not chat_request.get("chat_id"):
@@ -369,15 +391,17 @@ class DocChatRepository:
                 chat_request["chat_id"] = chat_details.id
                 self.log.info("New chat initialized", chat_id=chat_request["chat_id"])
             
-            # Check is content safe
+            # Check if content is safe
             is_safe = is_content_safe(chat_request["query"], self.settings.AZURE_CONTENT_SAFETY_ENDPOINT, self.settings.AZURE_CONTENT_SAFETY_KEY)
             
             if not is_safe:
                 self.log.error("Unsafe content detected in chat request")
-                return {
-                    "response": "Your message contains content that is not allowed. Please rephrase your query and try again.",
-                    "chatId": chat_request["chat_id"]
-                }
+                return self._sse_error_response(
+                    [
+                        self._get_error_sse_message("Your message contains content that is not allowed. Please rephrase your query and try again."),
+                        self._get_chat_id_sse_message(chat_request["chat_id"])
+                    ]
+                )
             
             # Load the vector store
             self.log.info("Loading vector store...")
@@ -471,7 +495,7 @@ class DocChatRepository:
                 await self._update_chat_history(chat_request["chat_id"], chat_request["query"], result)
                 self.log.info("Chat details updated successfully")
                     
-                yield f"chatId: {chat_request['chat_id']}\n\n"
+                yield f"data: {self._get_chat_id_sse_message(chat_request['chat_id'])}\n\n"
                 yield "data: [DONE]\n\n"
                 
             headers = {
@@ -484,8 +508,9 @@ class DocChatRepository:
             
         except Exception as e:
             self.log.error("An error occurred during chat processing", error=str(e))
-            return {
-                "response": "Sorry, something went wrong while processing your request. Please try again later.",
-                "chatId": chat_request.get("chat_id"),
-                "error": str(e)
-            }
+            return self._sse_error_response(
+                [
+                    self._get_error_sse_message("Sorry, something went wrong while processing your request. Please try again later."),
+                    self._get_chat_id_sse_message(chat_request["chat_id"]),
+                ]
+            )
