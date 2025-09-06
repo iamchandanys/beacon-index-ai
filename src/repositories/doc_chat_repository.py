@@ -77,8 +77,12 @@ class DocChatRepository:
             self.log.error("File size exceeds limit", size=data.size)
             raise ValueError("File size exceeds the 5 MB limit.")
         
-        blob_name = f"{uuid.uuid4()}.pdf"
-        content_type = "application/pdf"
+        # Get the file extension from the uploaded file's filename
+        _, ext = os.path.splitext(data.filename)
+        ext = ext.lower() if ext else ""
+        blob_name = f"{uuid.uuid4()}{ext}"
+        # Use the uploaded file's content type
+        content_type = data.content_type
 
         blob_path = f"{client_id}/{product_id}/{blob_name}"
         
