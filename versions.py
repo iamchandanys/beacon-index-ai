@@ -30,7 +30,9 @@ packages = [
     "torchvision",
     "torchaudio",
     "pytest",
-    "deepeval"
+    "deepeval",
+    "PyJWT",
+    "passlib[bcrypt]"
 ]
 
 for pkg in packages:
